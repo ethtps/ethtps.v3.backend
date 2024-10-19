@@ -6,8 +6,16 @@ namespace ETHTPS.V3.Data
 {
     public class ETHTPSContext : DbContext
     {
+        public ETHTPSContext() { }
+
         public ETHTPSContext(DbContextOptions<ETHTPSContext> options) : base(options)
         {
+
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            base.OnConfiguring(optionsBuilder);
         }
 
         public DbSet<Updater> Updaters { get; set; }
