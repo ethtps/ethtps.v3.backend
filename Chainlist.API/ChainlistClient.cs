@@ -8,13 +8,10 @@ namespace Chainlist.API
     public sealed class ChainlistClient
     {
         private readonly HttpClient _httpClient;
-        private readonly string _baseUrl;
 
-        public ChainlistClient(HttpClient httpClient, string baseUrl)
+        public ChainlistClient(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _httpClient.BaseAddress = new Uri(baseUrl);
-            _baseUrl = baseUrl;
         }
 
         public async Task<ChainInfo[]> GetAllChainsAsync()
