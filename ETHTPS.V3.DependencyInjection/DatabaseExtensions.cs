@@ -14,7 +14,7 @@ namespace ETHTPS.V3.DependencyInjection
     /// </summary>
     public static class DatabaseExtensions
     {
-        public static void ConfigureDatabase(this IServiceCollection services, ETHTPSEnvironment currentEnvironment, IConfiguration configuration)
+        public static void ConfigureDatabase(this IServiceCollection services, IConfiguration configuration, ETHTPSEnvironment currentEnvironment)
         {
             services.AddDbContext<ETHTPSContext>(options =>
             options.UseSqlServer(configuration.GetConnectionString(currentEnvironment.ToString())));

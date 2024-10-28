@@ -7,11 +7,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.Backend", "ETHTPS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.Data", "..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj", "{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.AbstractionLayer", "..\ETHTPS.V3.AbstractionLayer\ETHTPS.V3.AbstractionLayer.csproj", "{5E158601-FA3E-438E-924C-A0C1C567D9E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.AbstractionLayer", "..\ETHTPS.V3.AbstractionLayer\ETHTPS.V3.AbstractionLayer.csproj", "{5E158601-FA3E-438E-924C-A0C1C567D9E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.DependencyInjection", "..\ETHTPS.V3.DependencyInjection\ETHTPS.V3.DependencyInjection.csproj", "{777C6C78-FD67-4981-976B-670327BB7AC5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.DependencyInjection", "..\ETHTPS.V3.DependencyInjection\ETHTPS.V3.DependencyInjection.csproj", "{777C6C78-FD67-4981-976B-670327BB7AC5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.Utils", "..\ETHTPS.Utils\ETHTPS.Utils.csproj", "{1581AF84-592E-4FB2-9214-3DB45A720D38}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.Utils", "..\ETHTPS.Utils\ETHTPS.Utils.csproj", "{1581AF84-592E-4FB2-9214-3DB45A720D38}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Tests", "..\ETHTPS.V3.Tests\ETHTPS.V3.Tests.csproj", "{1C659145-9366-4B02-BBC5-D8E1146C04F5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chainlist.API", "..\Chainlist.API\Chainlist.API.csproj", "{F4E3C95D-1942-4936-B14D-3D01BBD248CD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,14 @@ Global
 		{1581AF84-592E-4FB2-9214-3DB45A720D38}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1581AF84-592E-4FB2-9214-3DB45A720D38}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1581AF84-592E-4FB2-9214-3DB45A720D38}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1C659145-9366-4B02-BBC5-D8E1146C04F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1C659145-9366-4B02-BBC5-D8E1146C04F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1C659145-9366-4B02-BBC5-D8E1146C04F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1C659145-9366-4B02-BBC5-D8E1146C04F5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4E3C95D-1942-4936-B14D-3D01BBD248CD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4E3C95D-1942-4936-B14D-3D01BBD248CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4E3C95D-1942-4936-B14D-3D01BBD248CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4E3C95D-1942-4936-B14D-3D01BBD248CD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
-﻿using ETHTPS.V3.DependencyInjection;
+﻿using ETHTPS.Utils.Constants;
+using ETHTPS.V3.DependencyInjection;
 
 using static ETHTPS.Utils.Configuration.Enums;
 
@@ -7,6 +8,7 @@ namespace ETHTPS.V3.Backend
     public class Startup
     {
         public IConfiguration Configuration { get; }
+        private static ETHTPSEnvironment CurrentEnvironment { get => Constants.CURRENT_ENVIRONMENT; }
 
         public Startup(IConfiguration configuration)
         {
@@ -16,7 +18,8 @@ namespace ETHTPS.V3.Backend
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.ConfigureDatabase(ETHTPSEnvironment.Development, Configuration);
+            services.ConfigureDatabase(Configuration, CurrentEnvironment);
+            services.AddChainlistClient(Configuration, CurrentEnvironment);
             services.AddControllers();
         }
 
@@ -32,6 +35,7 @@ namespace ETHTPS.V3.Backend
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
+
             app.MigrateDatabase();
             app.UseHttpsRedirection();
             app.UseStaticFiles();

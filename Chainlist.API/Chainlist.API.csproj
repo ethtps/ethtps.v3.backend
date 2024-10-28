@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Chainlist.API\Chainlist.API.csproj" />
-    <ProjectReference Include="..\ETHTPS.Utils\ETHTPS.Utils.csproj" />
-    <ProjectReference Include="..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
 </Project>

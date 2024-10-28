@@ -2,7 +2,7 @@
 {
     public sealed class Constants :
 #if DEBUG
-        SharedConstants
+        DevelopmentConstants
 #else
         ProductionConstants
 #endif
