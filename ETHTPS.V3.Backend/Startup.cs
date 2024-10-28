@@ -1,7 +1,4 @@
-﻿using ETHTPS.V3.Data;
-using ETHTPS.V3.DependencyInjection;
-
-using Microsoft.EntityFrameworkCore;
+﻿using ETHTPS.V3.DependencyInjection;
 
 using static ETHTPS.Utils.Configuration.Enums;
 
@@ -35,14 +32,7 @@ namespace ETHTPS.V3.Backend
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
             }
-
-            // Create database tables on startup
-            using (var scope = app.ApplicationServices.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ETHTPSContext>();
-                dbContext.Database.Migrate();
-            }
-
+            app.MigrateDatabase();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseRouting();
