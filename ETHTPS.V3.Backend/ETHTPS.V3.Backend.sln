@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Backend", "ETHTPS.V3.Backend.csproj", "{34E7F737-152F-4499-A12C-49946C7B338D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.Backend", "ETHTPS.V3.Backend.csproj", "{34E7F737-152F-4499-A12C-49946C7B338D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Data", "..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj", "{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.Data", "..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj", "{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.AbstractionLayer", "..\ETHTPS.V3.AbstractionLayer\ETHTPS.V3.AbstractionLayer.csproj", "{5E158601-FA3E-438E-924C-A0C1C567D9E8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

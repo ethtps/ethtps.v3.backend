@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj" />
+    <ProjectReference Include="..\ETHTPS.V3.AbstractionLayer\ETHTPS.V3.AbstractionLayer.csproj" />
   </ItemGroup>
 
 </Project>
