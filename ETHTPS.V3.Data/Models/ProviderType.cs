@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents a provider type entity, including details such as name and color.
     /// </summary>
-    public class ProviderType
+    public sealed class ProviderType
     {
         /// <summary>
         /// Gets or sets the unique identifier for the provider type.

@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents health information for a specific binding.
     /// </summary>
-    public class Health
+    public sealed class Health
     {
         /// <summary>
         /// Gets or sets the unique identifier for the health entity.

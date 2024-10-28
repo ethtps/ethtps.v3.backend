@@ -14,7 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ETHTPS.V3.AbstractionLayer\ETHTPS.V3.AbstractionLayer.csproj" />
+    <ProjectReference Include="..\ETHTPS.V3.DependencyInjection\ETHTPS.V3.DependencyInjection.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\" />
   </ItemGroup>
 
 </Project>

@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents a binding between an endpoint and an updater.
     /// </summary>
-    public class Binding
+    public sealed class Binding
     {
         /// <summary>
         /// Gets or sets the unique identifier for the binding.

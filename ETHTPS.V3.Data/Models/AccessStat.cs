@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents access statistics for a specific project and path.
     /// </summary>
-    public class AccessStat
+    public sealed class AccessStat
     {
         /// <summary>
         /// Gets or sets the unique identifier for the access statistic.

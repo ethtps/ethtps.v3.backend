@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents the status of the health of a binding.
     /// </summary>
-    public class HealthStatus
+    public sealed class HealthStatus
     {
         /// <summary>
         /// Gets or sets the unique identifier for the health status.

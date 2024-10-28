@@ -4,6 +4,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ETHTPS.V3.Data
 {
+    /// <summary>
+    /// Represents the database context for the ETHTPS application.
+    /// </summary>
     public class ETHTPSContext : DbContext
     {
         public ETHTPSContext() { }

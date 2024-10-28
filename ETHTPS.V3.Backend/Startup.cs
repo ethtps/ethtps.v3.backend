@@ -1,6 +1,9 @@
 ﻿using ETHTPS.V3.Data;
+using ETHTPS.V3.DependencyInjection;
 
 using Microsoft.EntityFrameworkCore;
+
+using static ETHTPS.Utils.Configuration.Enums;
 
 namespace ETHTPS.V3.Backend
 {
@@ -16,11 +19,7 @@ namespace ETHTPS.V3.Backend
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ETHTPSContext>(options =>
-             options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
-
-            // Add other services like controllers, etc.
+            services.ConfigureDatabase(ETHTPSEnvironment.Development, Configuration);
             services.AddControllers();
         }
 

@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents an updater entity that updates network and provider information.
     /// </summary>
-    public class Updater
+    public sealed class Updater
     {
         /// <summary>
         /// Gets or sets the unique identifier for the updater.

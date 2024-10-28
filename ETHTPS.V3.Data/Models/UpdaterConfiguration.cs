@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents the configuration settings for an updater.
     /// </summary>
-    public class UpdaterConfiguration
+    public sealed class UpdaterConfiguration
     {
         /// <summary>
         /// Gets or sets the unique identifier for the updater configuration.

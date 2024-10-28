@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents detailed access statistics, including request time, IP address, and date.
     /// </summary>
-    public class DetailedAccessStat
+    public sealed class DetailedAccessStat
     {
         /// <summary>
         /// Gets or sets the unique identifier for the detailed access statistic.

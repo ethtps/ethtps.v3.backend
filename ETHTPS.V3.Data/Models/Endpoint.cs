@@ -3,7 +3,7 @@ namespace ETHTPS.V3.Data.Models
     /// <summary>
     /// Represents an endpoint entity with address and authentication details.
     /// </summary>
-    public class Endpoint
+    public sealed class Endpoint
     {
         /// <summary>
         /// Gets or sets the unique identifier for the endpoint.

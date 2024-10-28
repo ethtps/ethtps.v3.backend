@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace ETHTPS.V3.Data
 {
-    public class ETHTPSContextFactory : IDesignTimeDbContextFactory<ETHTPSContext>
+    public sealed class ETHTPSContextFactory : IDesignTimeDbContextFactory<ETHTPSContext>
     {
         public ETHTPSContext CreateDbContext(string[] args)
         {
