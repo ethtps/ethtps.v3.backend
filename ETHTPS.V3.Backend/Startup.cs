@@ -1,6 +1,5 @@
-﻿using ETHTPS.V3.Data;
-
-using Microsoft.EntityFrameworkCore;
+﻿using ETHTPS.V3.AbstractionLayer.Extensions;
+using ETHTPS.V3.Data.Mongo;
 
 namespace ETHTPS.V3.Backend
 {
@@ -16,11 +15,8 @@ namespace ETHTPS.V3.Backend
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ETHTPSContext>(options =>
-             options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
-
-
-            // Add other services like controllers, etc.
+            services.AddMongoDB(Configuration);
+            services.AddScoped<ETHTPSConnection>();
             services.AddControllers();
         }
 
@@ -35,13 +31,6 @@ namespace ETHTPS.V3.Backend
             {
                 app.UseExceptionHandler("/Home/Error");
                 app.UseHsts();
-            }
-
-            // Create database tables on startup
-            using (var scope = app.ApplicationServices.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ETHTPSContext>();
-                dbContext.Database.Migrate();
             }
 
             app.UseHttpsRedirection();
