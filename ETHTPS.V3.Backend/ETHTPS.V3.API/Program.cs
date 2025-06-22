@@ -1,5 +1,5 @@
 
-using ETHTPS.V3.Data;
+using ETHTPS.V3.Cache.Core;
 
 namespace ETHTPS.V3.API
 {
@@ -14,7 +14,7 @@ namespace ETHTPS.V3.API
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
-            builder.Services.AddSingleton<ETHTPSDatabase>();
+            builder.Services.AddTransient<AsyncCacheService>();
 
             var app = builder.Build();
 

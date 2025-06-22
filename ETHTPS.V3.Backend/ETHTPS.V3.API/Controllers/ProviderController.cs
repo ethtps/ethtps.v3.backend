@@ -1,4 +1,4 @@
-﻿using ETHTPS.V3.Data;
+﻿using ETHTPS.V3.Cache.Core;
 using ETHTPS.V3.Data.Models;
 
 using Microsoft.AspNetCore.Mvc;
@@ -8,17 +8,17 @@ namespace ETHTPS.V3.API.Controllers
     [Route("api/[controller]/[action]")]
     public class ProviderController : Controller
     {
-        private readonly ETHTPSDatabase _database;
+        private readonly AsyncCacheService _cacheService;
 
-        public ProviderController(ETHTPSDatabase database)
+        public ProviderController(AsyncCacheService cacheService)
         {
-            _database = database;
+            _cacheService = cacheService;
         }
 
         [HttpGet]
-        public IEnumerable<ProviderInfo> GetAllProviders()
+        public async Task<IEnumerable<ProviderInfo>?> GetAllProviders()
         {
-            return _database.GetAllProviders();
+            return await _cacheService.GetAsync<IEnumerable<ProviderInfo>>("all_providers");
         }
     }
 }

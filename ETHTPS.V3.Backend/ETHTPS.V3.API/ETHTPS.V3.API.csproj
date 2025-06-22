@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj" />
+    <ProjectReference Include="..\ETHTPS.V3.Cache.Core\ETHTPS.V3.Cache.Core.csproj" />
   </ItemGroup>
 
 </Project>
