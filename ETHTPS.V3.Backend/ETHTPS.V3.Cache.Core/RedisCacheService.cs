@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace ETHTPS.V3.Cache.Core
 {
-    public sealed class RedisCacheService : ISyncCache, IAsyncCache
+    public sealed class RedisCacheService : ISyncCache, IAsyncCache, IDisposable
     {
         private readonly ConnectionMultiplexer _multiplexer;
         private readonly IDatabase _database;
@@ -60,5 +60,10 @@ namespace ETHTPS.V3.Cache.Core
         public void Set<T>(string key, T value, TimeSpan expiry) => Set(key, JsonConvert.SerializeObject(value), expiry);
 
         public async Task SetAsync(string key, string value, TimeSpan expiry) => await _database.StringSetAsync(key, value, expiry);
+
+        public void Dispose()
+        {
+            _multiplexer?.Dispose();
+        }
     }
 }

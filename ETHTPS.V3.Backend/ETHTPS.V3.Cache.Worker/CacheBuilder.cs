@@ -2,7 +2,7 @@
 
 namespace ETHTPS.V3.Cache.Worker
 {
-    internal class CacheBuilder
+    internal class CacheBuilder : IDisposable
     {
         private readonly RedisCacheService _redisCache;
         private readonly RMQPublisher _rmqPublisher;
@@ -23,14 +23,21 @@ namespace ETHTPS.V3.Cache.Worker
             }
         }
 
-        public void RegisterAction<T>(string cacheKey, Func<T> builderAction)
+        public void RegisterAction<T>(string cacheKey, Func<T> builderAction, TimeSpan? ttl = null)
         {
             _rmqReceiver.On(cacheKey, async () =>
             {
-                _redisCache.Set(cacheKey, builderAction());
+                _redisCache.Set(cacheKey, builderAction(), ttl ?? TimeSpan.FromSeconds(60));
                 await _rmqPublisher.PublishAsync(cacheKey);
             }, persist: true);
             Console.WriteLine($"Registered action \"{cacheKey}\"");
+        }
+
+        public void Dispose()
+        {
+            _redisCache?.Dispose();
+            _rmqPublisher?.Dispose();
+            _rmqReceiver?.Dispose();
         }
     }
 }

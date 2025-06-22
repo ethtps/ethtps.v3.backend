@@ -83,5 +83,12 @@ namespace ETHTPS.V3.Cache.Core
                 }
             }
         }
+
+        public new void Dispose()
+        {
+            _connection?.Dispose();
+            _queuedActions?.Clear();
+            _queuedPersistentActions?.Clear();
+        }
     }
 }

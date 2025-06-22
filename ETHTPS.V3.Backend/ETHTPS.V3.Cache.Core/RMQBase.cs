@@ -2,7 +2,7 @@
 
 namespace ETHTPS.V3.Cache.Core
 {
-    public class RMQBase
+    public class RMQBase : IDisposable
     {
         protected IConnection? _connection;
         protected IChannel? _channel;
@@ -14,6 +14,11 @@ namespace ETHTPS.V3.Cache.Core
         {
             _connectionFactory = new ConnectionFactory() { HostName = hostname };
             _queueName = queueName;
+        }
+
+        public void Dispose()
+        {
+            _connection?.Dispose();
         }
     }
 }
