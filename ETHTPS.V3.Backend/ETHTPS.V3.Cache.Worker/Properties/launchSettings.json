@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ETHTPS.V3.Cache.Worker": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

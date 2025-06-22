@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36203.30 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.API", "ETHTPS.V3.API\ETHTPS.V3.API.csproj", "{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Data", "ETHTPS.V3.Data\ETHTPS.V3.Data.csproj", "{101C8E48-3DF8-4570-A4E1-28A0B4775C44}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.ChainDataUpdater", "ETHTPS.V3.ChainDataUpdater\ETHTPS.V3.ChainDataUpdater.csproj", "{9E6B661A-1D21-4B20-9216-771A4C99EF60}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Cache.Worker", "ETHTPS.V3.Cache.Worker\ETHTPS.V3.Cache.Worker.csproj", "{50D78755-CF53-4134-BFB0-819BB8FF4854}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8742D936-8F52-4A2A-8EB4-D0872C05129E}
+	EndGlobalSection
+EndGlobal
