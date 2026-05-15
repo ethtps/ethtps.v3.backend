@@ -10,7 +10,6 @@ builder.Services
     .Configure<IngestionOptions>(builder.Configuration.GetSection("Ingestion"))
     .AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Postgres")!))
     .AddHttpClient<RpcClient>()
-        .AddStandardResilienceHandler()
         .Services
     .AddSingleton<RpcHealthTracker>()
     .AddSingleton<RpcSelector>()

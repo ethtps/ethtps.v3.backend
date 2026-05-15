@@ -11,7 +11,6 @@ builder.Services
     .Configure<BackfillOptions>(builder.Configuration.GetSection("Backfill"))
     .AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Postgres")!))
     .AddHttpClient<RpcClient>()
-        .AddStandardResilienceHandler()
         .Services
     .AddSingleton<RpcHealthTracker>()
     .AddSingleton<RpcSelector>()

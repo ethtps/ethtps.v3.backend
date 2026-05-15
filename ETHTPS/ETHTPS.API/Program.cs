@@ -44,6 +44,7 @@ await app.Services.GetRequiredService<SchemaInitializer>().RunAsync();
 app.UseMiddleware<ApiKeyMiddleware>();
 app.UseRateLimiter();
 
+app.MapOpenApi();
 app.MapControllers();
 app.MapHub<MetricsHub>("/hubs/metrics");
 app.MapScalarApiReference();
