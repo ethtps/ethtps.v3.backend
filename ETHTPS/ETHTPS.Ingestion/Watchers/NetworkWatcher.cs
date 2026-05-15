@@ -115,7 +115,7 @@ public class NetworkWatcher(
         await publisher.PublishBlockAsync(finalBlock, transactions, ct);
         healthTracker.RecordSuccess(rpc);
 
-        logger.LogDebug("Chain {ChainId}: published block {BlockNumber} txs={TxCount} blockTime={BlockTimeMs}ms",
-            network.ChainId, block.BlockNumber, transactions.Count, blockTimeMs);
+        logger.LogInformation("Chain {ChainId} ({Name}): block {BlockNumber} txs={TxCount} blockTime={BlockTimeMs}ms",
+            network.ChainId, network.Name, block.BlockNumber, transactions.Count, blockTimeMs);
     }
 }

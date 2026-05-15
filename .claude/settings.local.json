@@ -5,7 +5,12 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(docker exec ethtps-kafka-1 *)",
-      "PowerShell(docker exec ethtps-kafka-1 *)"
+      "PowerShell(docker exec ethtps-kafka-1 *)",
+      "Bash(dotnet build *)",
+      "Bash(git -C \"D:/repos/ethtps.v3.backend\" add ETHTPS/)",
+      "Bash(git -C \"D:/repos/ethtps.v3.backend\" status --short)",
+      "Bash(git -C \"D:/repos/ethtps.v3.backend\" add .claude/)",
+      "Bash(git -C D:/repos/ethtps.v3.backend commit -m ' *)"
     ]
   }
 }

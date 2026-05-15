@@ -28,8 +28,10 @@ public class IngestionOrchestrator(
     {
         _hostToken = stoppingToken;
         var networks = await LoadNetworksFromDbAsync(stoppingToken);
+        logger.LogInformation("Loaded {Count} networks from DB — starting watchers", networks.Count);
         foreach (var network in networks)
             StartWatcher(network);
+        logger.LogInformation("All watchers started ({Count} active)", _watchers.Count);
 
         await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
     }

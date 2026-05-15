@@ -16,7 +16,7 @@ public class MetricsWriteRepository(NpgsqlDataSource dataSource)
             cmd.CommandText = """
                 INSERT INTO metrics (chain_id, block_number, timestamp, tps, gps)
                 VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (chain_id, block_number) DO NOTHING
+                ON CONFLICT (chain_id, block_number, timestamp) DO NOTHING
                 """;
             cmd.Parameters.Add(new NpgsqlParameter<int> { Value = m.ChainId });
             cmd.Parameters.Add(new NpgsqlParameter<long> { Value = m.BlockNumber });

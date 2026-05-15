@@ -114,6 +114,7 @@ public class TransactionConsumer(
             {
                 await transactionRepository.BulkInsertAsync(batch, ct);
                 _consumer?.Commit(offsets);
+                logger.LogInformation("Flushed {Count} transactions", batch.Count);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

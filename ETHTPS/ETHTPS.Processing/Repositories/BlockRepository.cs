@@ -13,7 +13,7 @@ public class BlockRepository(NpgsqlDataSource dataSource)
         cmd.CommandText = """
             INSERT INTO blocks (chain_id, block_number, block_hash, timestamp, tx_count, gas_used, gas_limit, block_time_ms, ingested_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ON CONFLICT (chain_id, block_number) DO NOTHING
+            ON CONFLICT (chain_id, block_number, timestamp) DO NOTHING
             """;
         cmd.Parameters.Add(new NpgsqlParameter<int> { Value = block.ChainId });
         cmd.Parameters.Add(new NpgsqlParameter<long> { Value = block.BlockNumber });

@@ -1,5 +1,3 @@
-using Npgsql;
-using StackExchange.Redis;
 using ETHTPS.API.Cache;
 using ETHTPS.API.Hubs;
 using ETHTPS.API.Infrastructure;
@@ -9,6 +7,9 @@ using ETHTPS.API.RateLimiting;
 using ETHTPS.API.Repositories;
 using ETHTPS.API.Services;
 using ETHTPS.API.Workers;
+using Npgsql;
+using Scalar.AspNetCore;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,7 +33,8 @@ builder.Services
     .AddControllers()
         .Services
     .AddRateLimiting(builder)
-    .AddSingleton<SchemaInitializer>();
+    .AddSingleton<SchemaInitializer>()
+    .AddOpenApi();
 
 var app = builder.Build();
 
@@ -44,5 +46,5 @@ app.UseRateLimiter();
 
 app.MapControllers();
 app.MapHub<MetricsHub>("/hubs/metrics");
-
+app.MapScalarApiReference();
 await app.RunAsync();

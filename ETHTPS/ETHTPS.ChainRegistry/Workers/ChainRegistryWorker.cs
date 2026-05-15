@@ -40,7 +40,9 @@ public class ChainRegistryWorker(
 
         var dbNetworks = await networkRepository.GetAllAsync(ct);
         var dbMap = dbNetworks.ToDictionary(n => n.ChainId);
-        var chainlistMap = chainlistNetworks.ToDictionary(n => n.ChainId);
+        var chainlistMap = chainlistNetworks
+            .Where(n => n.ChainId is >= 1 and <= int.MaxValue)
+            .ToDictionary(n => (int)n.ChainId);
 
         var added = 0;
         var removed = 0;

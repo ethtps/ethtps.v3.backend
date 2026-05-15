@@ -90,8 +90,8 @@ public class BlockConsumer(
                     }, stoppingToken);
 
                     consumer.Commit(result);
-                    logger.LogDebug("Processed block {BlockNumber} chain {ChainId} tps={Tps} gps={Gps}",
-                        block.BlockNumber, block.ChainId, metrics.Tps, metrics.Gps);
+                    logger.LogInformation("Block {BlockNumber} chain {ChainId} — tps={Tps:F2} gps={Gps:F2} txs={TxCount}",
+                        block.BlockNumber, block.ChainId, metrics.Tps, metrics.Gps, block.TransactionCount);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {

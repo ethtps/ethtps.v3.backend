@@ -42,7 +42,7 @@ public class TransactionWriteRepository(NpgsqlDataSource dataSource)
             cmd.CommandText = """
                 INSERT INTO transactions (chain_id, block_number, block_hash, tx_hash, gas, block_timestamp)
                 VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (chain_id, tx_hash) DO NOTHING
+                ON CONFLICT (chain_id, tx_hash, block_timestamp) DO NOTHING
                 """;
             cmd.Parameters.Add(new NpgsqlParameter<int> { Value = tx.ChainId });
             cmd.Parameters.Add(new NpgsqlParameter<long> { Value = tx.BlockNumber });

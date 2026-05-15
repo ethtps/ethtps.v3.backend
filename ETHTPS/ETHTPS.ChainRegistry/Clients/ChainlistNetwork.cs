@@ -5,7 +5,7 @@ namespace ETHTPS.ChainRegistry.Clients;
 public class ChainlistNetwork
 {
     [JsonPropertyName("chainId")]
-    public int ChainId { get; set; }
+    public long ChainId { get; set; }
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
