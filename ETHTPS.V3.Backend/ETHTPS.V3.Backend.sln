@@ -7,7 +7,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.Backend", "ETHTPS
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ETHTPS.V3.Data", "..\ETHTPS.V3.Data\ETHTPS.V3.Data.csproj", "{A8276C8A-FD1C-4BBB-A94A-F6C0D88D4B68}"
 EndProject
+<<<<<<< Updated upstream
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.AbstractionLayer", "..\ETHTPS.V3.AbstractionLayer\ETHTPS.V3.AbstractionLayer.csproj", "{5E158601-FA3E-438E-924C-A0C1C567D9E8}"
+=======
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.ChainMetadataUpdater", "ETHTPS.V3.ChainDataUpdater\ETHTPS.V3.ChainMetadataUpdater.csproj", "{9E6B661A-1D21-4B20-9216-771A4C99EF60}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Cache.Worker", "ETHTPS.V3.Cache.Worker\ETHTPS.V3.Cache.Worker.csproj", "{50D78755-CF53-4134-BFB0-819BB8FF4854}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.Cache.Core", "ETHTPS.V3.Cache.Core\ETHTPS.V3.Cache.Core.csproj", "{B55F7C4D-CBAA-42D8-9FB6-CA91610FDCEF}"
+>>>>>>> Stashed changes
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ETHTPS.V3.LiveDataUpdater", "ETHTPS.V3.LiveDataUpdater\ETHTPS.V3.LiveDataUpdater.csproj", "{00A7A359-1990-4E3E-BF1F-F4F17DA95DA7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +25,7 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+<<<<<<< Updated upstream
 		{34E7F737-152F-4499-A12C-49946C7B338D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{34E7F737-152F-4499-A12C-49946C7B338D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{34E7F737-152F-4499-A12C-49946C7B338D}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,6 +38,32 @@ Global
 		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E158601-FA3E-438E-924C-A0C1C567D9E8}.Release|Any CPU.Build.0 = Release|Any CPU
+=======
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61A3223C-EEB8-4CE0-BDFF-95FF901B85FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{101C8E48-3DF8-4570-A4E1-28A0B4775C44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E6B661A-1D21-4B20-9216-771A4C99EF60}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50D78755-CF53-4134-BFB0-819BB8FF4854}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B55F7C4D-CBAA-42D8-9FB6-CA91610FDCEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B55F7C4D-CBAA-42D8-9FB6-CA91610FDCEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B55F7C4D-CBAA-42D8-9FB6-CA91610FDCEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B55F7C4D-CBAA-42D8-9FB6-CA91610FDCEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{00A7A359-1990-4E3E-BF1F-F4F17DA95DA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{00A7A359-1990-4E3E-BF1F-F4F17DA95DA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{00A7A359-1990-4E3E-BF1F-F4F17DA95DA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{00A7A359-1990-4E3E-BF1F-F4F17DA95DA7}.Release|Any CPU.Build.0 = Release|Any CPU
+>>>>>>> Stashed changes
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

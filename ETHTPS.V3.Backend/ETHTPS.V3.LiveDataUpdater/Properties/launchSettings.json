@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ETHTPS.V3.LiveDataUpdater": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
