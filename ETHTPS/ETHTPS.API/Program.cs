@@ -1,34 +1,48 @@
+using Npgsql;
+using StackExchange.Redis;
+using ETHTPS.API.Cache;
+using ETHTPS.API.Hubs;
+using ETHTPS.API.Infrastructure;
+using ETHTPS.API.Middleware;
+using ETHTPS.API.Options;
+using ETHTPS.API.RateLimiting;
+using ETHTPS.API.Repositories;
+using ETHTPS.API.Services;
+using ETHTPS.API.Workers;
 
-namespace ETHTPS.API
-{
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+builder.Services
+    .Configure<ApiOptions>(builder.Configuration.GetSection("Api"))
+    .AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Postgres")!))
+    .AddSingleton<IConnectionMultiplexer>(_ =>
+        ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("Redis")!))
+    .AddSingleton<IQueryCache, RedisQueryCache>()
+    .AddSingleton<ApiKeyService>()
+    .AddSingleton<ApiKeyRepository>()
+    .AddSingleton<MetricsReadRepository>()
+    .AddSingleton<NetworkReadRepository>()
+    .AddSingleton<MetricsQueryService>()
+    .AddSingleton<NetworkQueryService>()
+    .AddSingleton<MetricsEventConsumer>()
+    .AddHostedService(sp => sp.GetRequiredService<MetricsEventConsumer>())
+    .AddSignalR()
+        .AddStackExchangeRedis(builder.Configuration.GetConnectionString("Redis")!)
+        .Services
+    .AddControllers()
+        .Services
+    .AddRateLimiting(builder)
+    .AddSingleton<SchemaInitializer>();
 
-            builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
+var app = builder.Build();
 
-            var app = builder.Build();
+await app.Services.GetRequiredService<SchemaInitializer>().RunAsync();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                app.MapOpenApi();
-            }
+// API key validation middleware must run before the rate limiter
+app.UseMiddleware<ApiKeyMiddleware>();
+app.UseRateLimiter();
 
-            app.UseHttpsRedirection();
+app.MapControllers();
+app.MapHub<MetricsHub>("/hubs/metrics");
 
-            app.UseAuthorization();
-
-
-            app.MapControllers();
-
-            app.Run();
-        }
-    }
-}
+await app.RunAsync();

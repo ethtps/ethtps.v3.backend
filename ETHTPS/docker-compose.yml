@@ -1,0 +1,253 @@
+name: ethtps
+
+networks:
+  ethtps-net:
+    driver: bridge
+
+volumes:
+  timescaledb_data:
+  redis_data:
+  kafka_data:
+
+services:
+
+  # ── Infrastructure ────────────────────────────────────────────────────────────
+
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ethtps
+      POSTGRES_USER: ethtps
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ethtps}
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    networks:
+      - ethtps-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ethtps -d ethtps"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - ethtps-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  kafka:
+    image: bitnami/kafka:3.7
+    restart: unless-stopped
+    ports:
+      - "9092:9092"    # internal — service-to-service
+      - "9094:9094"    # external — host access for debugging
+    environment:
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:9094,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_CFG_LOG_RETENTION_HOURS: 168       # 7 days for network-events + aggregated-metrics
+      KAFKA_CFG_LOG_SEGMENT_BYTES: 1073741824  # 1 GB
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      - ethtps-net
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # One-shot container that pre-creates all Kafka topics with correct partition counts.
+  # Exits 0 on success; docker compose treats completed service as satisfied dependency.
+  kafka-init:
+    image: bitnami/kafka:3.7
+    restart: "no"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - ethtps-net
+    command: >
+      bash -c "
+        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+          --topic network-events     --partitions 8  --replication-factor 1
+          --config retention.ms=604800000 &&
+        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+          --topic raw-blocks         --partitions 16 --replication-factor 1
+          --config retention.ms=86400000 &&
+        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+          --topic raw-transactions   --partitions 16 --replication-factor 1
+          --config retention.ms=86400000 &&
+        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+          --topic aggregated-metrics --partitions 8  --replication-factor 1
+          --config retention.ms=604800000 &&
+        echo 'All Kafka topics ready.'
+      "
+
+  # Kafka UI — browse topics, consumer groups, and messages at http://localhost:8088
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    restart: unless-stopped
+    ports:
+      - "8088:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: ethtps-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - ethtps-net
+
+  # ── Application services ──────────────────────────────────────────────────────
+  # Each service is built from the solution root (context: .) using its own
+  # Dockerfile. Adjust ShardChainIdMin/Max env vars to split load across replicas.
+
+  chain-registry:
+    build:
+      context: .
+      dockerfile: ETHTPS.ChainRegistry/Dockerfile
+    restart: on-failure
+    environment:
+      ConnectionStrings__Postgres: >-
+        Host=timescaledb;Database=ethtps;Username=ethtps;Password=${POSTGRES_PASSWORD:-ethtps}
+      Kafka__BootstrapServers: kafka:9092
+      ChainRegistry__SyncInterval: "01:00:00"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - ethtps-net
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: ETHTPS.Ingestion/Dockerfile
+    restart: on-failure
+    environment:
+      ConnectionStrings__Postgres: >-
+        Host=timescaledb;Database=ethtps;Username=ethtps;Password=${POSTGRES_PASSWORD:-ethtps}
+      Kafka__BootstrapServers: kafka:9092
+      Ingestion__ShardChainIdMin: 1
+      Ingestion__ShardChainIdMax: 2147483647
+      Ingestion__PollIntervalMs: 2000
+      Ingestion__RpcTimeoutMs: 5000
+      Ingestion__MaxRpcBackoffSeconds: 60
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      chain-registry:
+        condition: service_started
+    networks:
+      - ethtps-net
+
+  processing:
+    build:
+      context: .
+      dockerfile: ETHTPS.Processing/Dockerfile
+    restart: on-failure
+    environment:
+      ConnectionStrings__Postgres: >-
+        Host=timescaledb;Database=ethtps;Username=ethtps;Password=${POSTGRES_PASSWORD:-ethtps}
+      ConnectionStrings__Redis: redis:6379
+      Kafka__BootstrapServers: kafka:9092
+      Processing__ShardChainIdMin: 1
+      Processing__ShardChainIdMax: 2147483647
+      Processing__TransactionBatchSize: 1000
+      Processing__TransactionFlushIntervalMs: 500
+      Processing__TransactionChannelCapacity: 50000
+      Processing__RedisLiveTtlSeconds: 60
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    networks:
+      - ethtps-net
+
+  # Backfill depends on processing being started because processing runs
+  # SchemaInitializer first — creating the hypertables backfill writes into.
+  backfill:
+    build:
+      context: .
+      dockerfile: ETHTPS.Backfill/Dockerfile
+    restart: on-failure
+    environment:
+      ConnectionStrings__Postgres: >-
+        Host=timescaledb;Database=ethtps;Username=ethtps;Password=${POSTGRES_PASSWORD:-ethtps}
+      Kafka__BootstrapServers: kafka:9092
+      Backfill__ShardChainIdMin: 1
+      Backfill__ShardChainIdMax: 2147483647
+      Backfill__MaxConcurrentChains: 50
+      Backfill__MaxConcurrentBlocksPerChain: 10
+      Backfill__CheckpointIntervalBlocks: 100
+      Backfill__RpcTimeoutMs: 10000
+      Backfill__MaxRpcBackoffSeconds: 60
+      Backfill__TransactionBatchSize: 1000
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      processing:
+        condition: service_started
+    networks:
+      - ethtps-net
+
+  api:
+    build:
+      context: .
+      dockerfile: ETHTPS.API/Dockerfile
+    restart: on-failure
+    ports:
+      - "8090:8080"
+    environment:
+      ConnectionStrings__Postgres: >-
+        Host=timescaledb;Database=ethtps;Username=ethtps;Password=${POSTGRES_PASSWORD:-ethtps}
+      ConnectionStrings__Redis: redis:6379
+      Kafka__BootstrapServers: kafka:9092
+      ASPNETCORE_URLS: http://+:8080
+      Api__AnonymousRateLimitPerMinute: 60
+      Api__ApiKeyRateLimitPerMinute: 600
+      Api__ApiKeyCacheTtlSeconds: 300
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      processing:
+        condition: service_started
+    networks:
+      - ethtps-net

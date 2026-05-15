@@ -1,4 +1,4 @@
-@ETHTPS.API_HostAddress = http://localhost:5225
+@ETHTPS.API_HostAddress = http://localhost:5012
 
 GET {{ETHTPS.API_HostAddress}}/weatherforecast/
 Accept: application/json
