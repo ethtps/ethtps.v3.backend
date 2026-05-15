@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "PowerShell(dir \"D:\\\\repos\\\\ethtps.v3.backend\\\\ETHTPS\" -Recurse | Where-Object { -not $_.PSIsContainer } | Select-Object @{N='Path';E={$_.FullName.Replace\\('D:\\\\repos\\\\ethtps.v3.backend\\\\ETHTPS\\\\',''\\)}} | Sort-Object Path | Format-Table -AutoSize)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
