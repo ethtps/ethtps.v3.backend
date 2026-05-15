@@ -14,6 +14,12 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
+    .AddCors(o => o.AddDefaultPolicy(p => p
+        .WithOrigins(builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+                     ?? ["http://localhost:5173"])
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()))
     .Configure<ApiOptions>(builder.Configuration.GetSection("Api"))
     .AddSingleton(_ => NpgsqlDataSource.Create(builder.Configuration.GetConnectionString("Postgres")!))
     .AddSingleton<IConnectionMultiplexer>(_ =>
@@ -41,6 +47,7 @@ var app = builder.Build();
 await app.Services.GetRequiredService<SchemaInitializer>().RunAsync();
 
 // API key validation middleware must run before the rate limiter
+app.UseCors();
 app.UseMiddleware<ApiKeyMiddleware>();
 app.UseRateLimiter();
 
