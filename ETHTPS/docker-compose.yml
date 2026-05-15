@@ -76,7 +76,7 @@ services:
     networks:
       - ethtps-net
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list"]
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -94,16 +94,16 @@ services:
       - ethtps-net
     command: >
       bash -c "
-        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+        /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic network-events     --partitions 8  --replication-factor 1
           --config retention.ms=604800000 &&
-        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+        /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic raw-blocks         --partitions 16 --replication-factor 1
           --config retention.ms=86400000 &&
-        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+        /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic raw-transactions   --partitions 16 --replication-factor 1
           --config retention.ms=86400000 &&
-        kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
+        /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic aggregated-metrics --partitions 8  --replication-factor 1
           --config retention.ms=604800000 &&
         echo 'All Kafka topics ready.'
