@@ -16,9 +16,13 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
                 name           TEXT        NOT NULL,
                 rpc_urls       TEXT[]      NOT NULL,
                 enabled        BOOLEAN     NOT NULL DEFAULT TRUE,
+                is_testnet     BOOLEAN     NOT NULL DEFAULT FALSE,
+                network_type   TEXT        NOT NULL DEFAULT 'mainnet',
                 removed_at     TIMESTAMPTZ,
                 last_synced_at TIMESTAMPTZ NOT NULL
             );
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS is_testnet   BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS network_type TEXT    NOT NULL DEFAULT 'mainnet';
             """;
         await cmd.ExecuteNonQueryAsync(ct);
     }
@@ -27,7 +31,7 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
     {
         await using var conn = await dataSource.OpenConnectionAsync(ct);
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT chain_id, name, rpc_urls, enabled, removed_at, last_synced_at FROM networks";
+        cmd.CommandText = "SELECT chain_id, name, rpc_urls, enabled, is_testnet, network_type, removed_at, last_synced_at FROM networks";
         await using var reader = await cmd.ExecuteReaderAsync(ct);
         var networks = new List<Network>();
         while (await reader.ReadAsync(ct))
@@ -38,8 +42,10 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
                 Name = reader.GetString(1),
                 RpcUrls = reader.GetFieldValue<string[]>(2),
                 Enabled = reader.GetBoolean(3),
-                RemovedAt = reader.IsDBNull(4) ? null : reader.GetFieldValue<DateTimeOffset>(4),
-                LastSyncedAt = reader.GetFieldValue<DateTimeOffset>(5)
+                IsTestnet = reader.GetBoolean(4),
+                NetworkType = reader.GetString(5),
+                RemovedAt = reader.IsDBNull(6) ? null : reader.GetFieldValue<DateTimeOffset>(6),
+                LastSyncedAt = reader.GetFieldValue<DateTimeOffset>(7)
             });
         }
         return networks;
@@ -50,12 +56,14 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
         await using var conn = await dataSource.OpenConnectionAsync(ct);
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
-            INSERT INTO networks (chain_id, name, rpc_urls, enabled, removed_at, last_synced_at)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO networks (chain_id, name, rpc_urls, enabled, is_testnet, network_type, removed_at, last_synced_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (chain_id) DO UPDATE SET
                 name           = EXCLUDED.name,
                 rpc_urls       = EXCLUDED.rpc_urls,
                 enabled        = EXCLUDED.enabled,
+                is_testnet     = EXCLUDED.is_testnet,
+                network_type   = EXCLUDED.network_type,
                 removed_at     = EXCLUDED.removed_at,
                 last_synced_at = EXCLUDED.last_synced_at
             """;
@@ -63,6 +71,8 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
         cmd.Parameters.Add(new NpgsqlParameter<string> { Value = network.Name });
         cmd.Parameters.Add(new NpgsqlParameter { Value = network.RpcUrls, NpgsqlDbType = NpgsqlDbType.Array | NpgsqlDbType.Text });
         cmd.Parameters.Add(new NpgsqlParameter<bool> { Value = network.Enabled });
+        cmd.Parameters.Add(new NpgsqlParameter<bool> { Value = network.IsTestnet });
+        cmd.Parameters.Add(new NpgsqlParameter<string> { Value = network.NetworkType });
         if (network.RemovedAt.HasValue)
             cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = network.RemovedAt.Value, NpgsqlDbType = NpgsqlDbType.TimestampTz });
         else

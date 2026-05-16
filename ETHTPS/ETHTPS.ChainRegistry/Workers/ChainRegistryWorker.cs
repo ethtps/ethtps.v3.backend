@@ -29,6 +29,17 @@ public class ChainRegistryWorker(
         }
     }
 
+    private static readonly HashSet<string> TestnetKeywords =
+    [
+        "testnet", "goerli", "sepolia", "mumbai", "fuji", "chapel", "baobab",
+        "ropsten", "rinkeby", "kovan", "holesky", "amoy", "alfajores", "saga"
+    ];
+
+    private static bool DetectIsTestnet(ChainlistNetwork n) =>
+        n.Network.Contains("test", StringComparison.OrdinalIgnoreCase) ||
+        n.Network.Contains("testnet", StringComparison.OrdinalIgnoreCase) ||
+        TestnetKeywords.Any(k => n.Name.Contains(k, StringComparison.OrdinalIgnoreCase));
+
     private async Task SyncAsync(CancellationToken ct)
     {
         var chainlistNetworks = await chainlistClient.FetchNetworksAsync(ct);
@@ -52,6 +63,7 @@ public class ChainRegistryWorker(
         foreach (var (chainId, clNetwork) in chainlistMap)
         {
             var filteredRpcs = ChainlistClient.FilterUsableRpcs(clNetwork.Rpc);
+            var isTestnet = DetectIsTestnet(clNetwork);
             if (!dbMap.TryGetValue(chainId, out var existing) || existing.RemovedAt.HasValue)
             {
                 var network = new Network
@@ -60,17 +72,19 @@ public class ChainRegistryWorker(
                     Name = clNetwork.Name,
                     RpcUrls = filteredRpcs,
                     Enabled = true,
+                    IsTestnet = isTestnet,
+                    NetworkType = "mainnet",
                     RemovedAt = null,
                     LastSyncedAt = now
                 };
                 await networkRepository.UpsertAsync(network, ct);
                 await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
-                    new NetworkAddedEvent(chainId, clNetwork.Name, filteredRpcs, now), ct);
+                    new NetworkAddedEvent(chainId, clNetwork.Name, filteredRpcs, isTestnet, "mainnet", now), ct);
                 added++;
             }
             else if (!filteredRpcs.SequenceEqual(existing.RpcUrls))
             {
-                var network = existing with { RpcUrls = filteredRpcs, LastSyncedAt = now };
+                var network = existing with { RpcUrls = filteredRpcs, IsTestnet = isTestnet, LastSyncedAt = now };
                 await networkRepository.UpsertAsync(network, ct);
                 await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
                     new NetworkRpcsUpdatedEvent(chainId, filteredRpcs, now), ct);
@@ -78,7 +92,7 @@ public class ChainRegistryWorker(
             }
             else
             {
-                await networkRepository.UpsertAsync(existing with { LastSyncedAt = now }, ct);
+                await networkRepository.UpsertAsync(existing with { LastSyncedAt = now, IsTestnet = isTestnet }, ct);
             }
         }
 

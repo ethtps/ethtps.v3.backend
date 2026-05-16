@@ -12,4 +12,7 @@ public class ChainlistNetwork
 
     [JsonPropertyName("rpc")]
     public string[] Rpc { get; set; } = [];
+
+    [JsonPropertyName("network")]
+    public string Network { get; set; } = "";
 }

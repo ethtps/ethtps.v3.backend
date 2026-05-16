@@ -50,9 +50,11 @@ public class MetricsController(
     }
 
     [HttpGet("global/live")]
-    public IActionResult GetGlobalLive()
+    public IActionResult GetGlobalLive(
+        [FromQuery] bool includeTestnets = true,
+        [FromQuery] bool includeSidechains = true)
     {
-        var (totalTps, totalGps, activeChains, computedAt) = consumer.GetGlobalSnapshot();
+        var (totalTps, totalGps, activeChains, computedAt) = consumer.GetGlobalSnapshot(includeTestnets, includeSidechains);
         return Ok(new GlobalMetricsResponse(totalTps, totalGps, activeChains, computedAt));
     }
 

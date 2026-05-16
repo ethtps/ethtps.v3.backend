@@ -4,6 +4,7 @@ using Confluent.Kafka;
 using ETHTPS.API.Hubs;
 using ETHTPS.API.Models;
 using ETHTPS.API.Models.Messages;
+using ETHTPS.API.Repositories;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,14 +14,55 @@ namespace ETHTPS.API.Workers;
 public class MetricsEventConsumer(
     IHubContext<MetricsHub> hubContext,
     IConfiguration configuration,
+    NetworkReadRepository networkRepository,
     ILogger<MetricsEventConsumer> logger) : BackgroundService
 {
     private readonly ConcurrentDictionary<int, (double Tps, double Gps, DateTimeOffset Timestamp)> _liveState = new();
+    private readonly ConcurrentDictionary<int, DateTimeOffset> _lastPushed = new();
+    private readonly ConcurrentDictionary<int, (bool IsTestnet, string NetworkType)> _networkMeta = new();
 
-    public (double TotalTps, double TotalGps, int ActiveChains, DateTimeOffset ComputedAt) GetGlobalSnapshot()
+    private async Task RefreshNetworkMetaAsync(CancellationToken ct)
+    {
+        try
+        {
+            var networks = await networkRepository.GetAllActiveAsync(ct);
+            foreach (var n in networks)
+                _networkMeta[n.ChainId] = (n.IsTestnet, n.NetworkType);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to refresh network metadata");
+        }
+    }
+
+    private async Task RefreshNetworkMetaPeriodicallyAsync(CancellationToken ct)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        try
+        {
+            while (await timer.WaitForNextTickAsync(ct))
+                await RefreshNetworkMetaAsync(ct);
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public (double TotalTps, double TotalGps, int ActiveChains, DateTimeOffset ComputedAt) GetGlobalSnapshot(
+        bool includeTestnets = true, bool includeSidechains = true)
     {
         var cutoff = DateTimeOffset.UtcNow.AddSeconds(-60);
-        var active = _liveState.Values.Where(v => v.Timestamp >= cutoff).ToList();
+        var active = _liveState
+            .Where(kv =>
+            {
+                if (kv.Value.Timestamp < cutoff) return false;
+                if (_networkMeta.TryGetValue(kv.Key, out var meta))
+                {
+                    if (!includeTestnets && meta.IsTestnet) return false;
+                    if (!includeSidechains && meta.NetworkType == "sidechain") return false;
+                }
+                return true;
+            })
+            .Select(kv => kv.Value)
+            .ToList();
         return (
             active.Sum(v => v.Tps),
             active.Sum(v => v.Gps),
@@ -31,6 +73,9 @@ public class MetricsEventConsumer(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await RefreshNetworkMetaAsync(stoppingToken);
+        var metaTask = RefreshNetworkMetaPeriodicallyAsync(stoppingToken);
+
         var config = new ConsumerConfig
         {
             BootstrapServers = configuration["Kafka:BootstrapServers"],
@@ -70,15 +115,19 @@ public class MetricsEventConsumer(
                     if (evt.Tps.HasValue && evt.Gps.HasValue)
                         _liveState[evt.ChainId] = (evt.Tps.Value, evt.Gps.Value, evt.Timestamp);
 
-                    // Push to SignalR
-                    var message = new MetricsUpdateMessage(evt.ChainId, evt.Tps, evt.Gps, evt.BlockNumber, evt.Timestamp);
-                    await hubContext.Clients
-                        .Group($"chain:{evt.ChainId}")
-                        .SendAsync("MetricsUpdate", message, stoppingToken);
+                    // Push to SignalR — throttled to one update per second per chain
+                    var now = DateTimeOffset.UtcNow;
+                    if (!_lastPushed.TryGetValue(evt.ChainId, out var lastPush) ||
+                        now - lastPush >= TimeSpan.FromSeconds(1))
+                    {
+                        var message = new MetricsUpdateMessage(evt.ChainId, evt.Tps, evt.Gps, evt.BlockNumber, evt.Timestamp);
+                        await hubContext.Clients
+                            .Group($"chain:{evt.ChainId}")
+                            .SendAsync("MetricsUpdate", message, stoppingToken);
+                        _lastPushed[evt.ChainId] = now;
+                    }
 
                     consumer.Commit(result);
-
-                    logger.LogDebug("Pushed metrics for chain {ChainId} block {BlockNumber}", evt.ChainId, evt.BlockNumber);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
@@ -90,5 +139,7 @@ public class MetricsEventConsumer(
         {
             consumer.Close();
         }
+
+        await metaTask;
     }
 }
