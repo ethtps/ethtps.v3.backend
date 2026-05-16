@@ -49,7 +49,7 @@ public class ChainRegistryWorker(
             var l2Type = L2BeatClient.LookupNetworkType(n.Name, chainTypeMap);
             if (l2Type is not null) return l2Type;
         }
-        return n.Name.Contains("sidechain", StringComparison.OrdinalIgnoreCase) ? "sidechain" : "mainnet";
+        return n.ChainId == 1 ? "mainnet" : "sidechain";
     }
 
     private async Task SyncAsync(CancellationToken ct)

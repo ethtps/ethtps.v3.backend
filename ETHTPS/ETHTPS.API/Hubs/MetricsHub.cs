@@ -1,9 +1,10 @@
+using ETHTPS.API.Repositories;
 using ETHTPS.API.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ETHTPS.API.Hubs;
 
-public class MetricsHub(ConnectionTracker tracker) : Hub
+public class MetricsHub(ConnectionTracker tracker, NetworkReadRepository networkRepository) : Hub
 {
     public override Task OnConnectedAsync()
     {
@@ -21,6 +22,17 @@ public class MetricsHub(ConnectionTracker tracker) : Hub
     {
         foreach (var id in chainIds)
             await Groups.AddToGroupAsync(Context.ConnectionId, $"chain:{id}");
+    }
+
+    public async Task SubscribeAll(bool includeTestnets = true, bool includeSidechains = true)
+    {
+        var networks = await networkRepository.GetAllActiveAsync(Context.ConnectionAborted);
+        foreach (var network in networks)
+        {
+            if (!includeTestnets && network.IsTestnet) continue;
+            if (!includeSidechains && network.NetworkType == "sidechain") continue;
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"chain:{network.ChainId}");
+        }
     }
 
     public async Task Unsubscribe(int[] chainIds)
