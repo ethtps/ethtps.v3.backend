@@ -17,6 +17,9 @@ builder.Services
     .AddHttpClient<ChainlistClient>()
         .AddStandardResilienceHandler()
         .Services
+    .AddHttpClient<L2BeatClient>()
+        .AddStandardResilienceHandler()
+        .Services
     .AddSingleton<INetworkRepository, NetworkRepository>()
     .AddSingleton<IKafkaProducer, KafkaProducer>()
     .AddHostedService<ChainRegistryWorker>();

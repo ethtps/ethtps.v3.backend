@@ -29,13 +29,14 @@ public static class RateLimitingExtensions
                 var apiKeyHash = httpContext.Items["ApiKeyHash"] as string;
                 if (apiKeyHash is not null)
                 {
-                    return RateLimitPartition.GetSlidingWindowLimiter(
+                    return RateLimitPartition.GetTokenBucketLimiter(
                         $"apikey:{apiKeyHash}",
-                        _ => new SlidingWindowRateLimiterOptions
+                        _ => new TokenBucketRateLimiterOptions
                         {
-                            PermitLimit = opts.ApiKeyRateLimitPerMinute,
-                            Window = TimeSpan.FromMinutes(1),
-                            SegmentsPerWindow = 6,
+                            TokenLimit = opts.ApiKeyBurstSize,
+                            TokensPerPeriod = opts.ApiKeyRateLimitPerMinute / 6,
+                            ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+                            AutoReplenishment = true,
                             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                             QueueLimit = 0
                         });
@@ -44,13 +45,14 @@ public static class RateLimitingExtensions
                 var forwardedFor = httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
                 var ip = forwardedFor ?? httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-                return RateLimitPartition.GetSlidingWindowLimiter(
+                return RateLimitPartition.GetTokenBucketLimiter(
                     $"anon:{ip}",
-                    _ => new SlidingWindowRateLimiterOptions
+                    _ => new TokenBucketRateLimiterOptions
                     {
-                        PermitLimit = opts.AnonymousRateLimitPerMinute,
-                        Window = TimeSpan.FromMinutes(1),
-                        SegmentsPerWindow = 6,
+                        TokenLimit = opts.AnonymousBurstSize,
+                        TokensPerPeriod = opts.AnonymousRateLimitPerMinute / 6,
+                        ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+                        AutoReplenishment = true,
                         QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                         QueueLimit = 0
                     });

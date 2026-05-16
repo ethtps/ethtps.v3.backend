@@ -12,6 +12,7 @@ namespace ETHTPS.ChainRegistry.Workers;
 
 public class ChainRegistryWorker(
     ChainlistClient chainlistClient,
+    L2BeatClient l2BeatClient,
     INetworkRepository networkRepository,
     IKafkaProducer kafkaProducer,
     IOptions<ChainRegistryOptions> options,
@@ -41,8 +42,15 @@ public class ChainRegistryWorker(
         n.Network.Contains("test", StringComparison.OrdinalIgnoreCase) ||
         TestnetKeywords.Any(k => n.Name.Contains(k, StringComparison.OrdinalIgnoreCase));
 
-    private static string DetectNetworkType(ChainlistNetwork n) =>
-        n.Name.Contains("sidechain", StringComparison.OrdinalIgnoreCase) ? "sidechain" : "mainnet";
+    private static string DetectNetworkType(ChainlistNetwork n, IReadOnlyDictionary<string, string>? chainTypeMap)
+    {
+        if (chainTypeMap is not null)
+        {
+            var l2Type = L2BeatClient.LookupNetworkType(n.Name, chainTypeMap);
+            if (l2Type is not null) return l2Type;
+        }
+        return n.Name.Contains("sidechain", StringComparison.OrdinalIgnoreCase) ? "sidechain" : "mainnet";
+    }
 
     private async Task SyncAsync(CancellationToken ct)
     {
@@ -52,6 +60,9 @@ public class ChainRegistryWorker(
             logger.LogWarning("Chainlist fetch returned null — skipping sync cycle");
             return;
         }
+
+        var chainTypeMap = await l2BeatClient.FetchChainTypesAsync(ct);
+        logger.LogInformation("L2Beat: loaded {Count} chain type entries", chainTypeMap?.Count ?? 0);
 
         var dbNetworks = await networkRepository.GetAllAsync(ct);
         var dbMap = dbNetworks.ToDictionary(n => n.ChainId);
@@ -69,7 +80,7 @@ public class ChainRegistryWorker(
         {
             var filteredRpcs = ChainlistClient.FilterUsableRpcs(clNetwork.Rpc);
             var isTestnet = DetectIsTestnet(clNetwork);
-            var networkType = DetectNetworkType(clNetwork);
+            var networkType = DetectNetworkType(clNetwork, chainTypeMap);
             if (!dbMap.TryGetValue(chainId, out var existing) || existing.RemovedAt.HasValue)
             {
                 var network = new Network
