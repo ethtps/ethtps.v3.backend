@@ -10,4 +10,5 @@ public class BackfillOptions
     public int RpcTimeoutMs { get; set; } = 10000;
     public int MaxRpcBackoffSeconds { get; set; } = 60;
     public int TransactionBatchSize { get; set; } = 1000;
+    public int LookbackHours { get; set; } = 1;
 }

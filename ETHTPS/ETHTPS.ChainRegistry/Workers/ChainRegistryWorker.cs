@@ -36,9 +36,13 @@ public class ChainRegistryWorker(
     ];
 
     private static bool DetectIsTestnet(ChainlistNetwork n) =>
+        n.Name.Contains("testnet", StringComparison.OrdinalIgnoreCase) ||
+        n.Name.Contains("devnet", StringComparison.OrdinalIgnoreCase) ||
         n.Network.Contains("test", StringComparison.OrdinalIgnoreCase) ||
-        n.Network.Contains("testnet", StringComparison.OrdinalIgnoreCase) ||
         TestnetKeywords.Any(k => n.Name.Contains(k, StringComparison.OrdinalIgnoreCase));
+
+    private static string DetectNetworkType(ChainlistNetwork n) =>
+        n.Name.Contains("sidechain", StringComparison.OrdinalIgnoreCase) ? "sidechain" : "mainnet";
 
     private async Task SyncAsync(CancellationToken ct)
     {
@@ -52,7 +56,8 @@ public class ChainRegistryWorker(
         var dbNetworks = await networkRepository.GetAllAsync(ct);
         var dbMap = dbNetworks.ToDictionary(n => n.ChainId);
         var chainlistMap = chainlistNetworks
-            .Where(n => n.ChainId is >= 1 and <= int.MaxValue)
+            .Where(n => n.ChainId is >= 1 and <= int.MaxValue &&
+                        !string.Equals(n.Status, "deprecated", StringComparison.OrdinalIgnoreCase))
             .ToDictionary(n => (int)n.ChainId);
 
         var added = 0;
@@ -64,6 +69,7 @@ public class ChainRegistryWorker(
         {
             var filteredRpcs = ChainlistClient.FilterUsableRpcs(clNetwork.Rpc);
             var isTestnet = DetectIsTestnet(clNetwork);
+            var networkType = DetectNetworkType(clNetwork);
             if (!dbMap.TryGetValue(chainId, out var existing) || existing.RemovedAt.HasValue)
             {
                 var network = new Network
@@ -73,26 +79,29 @@ public class ChainRegistryWorker(
                     RpcUrls = filteredRpcs,
                     Enabled = true,
                     IsTestnet = isTestnet,
-                    NetworkType = "mainnet",
+                    NetworkType = networkType,
                     RemovedAt = null,
                     LastSyncedAt = now
                 };
                 await networkRepository.UpsertAsync(network, ct);
                 await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
-                    new NetworkAddedEvent(chainId, clNetwork.Name, filteredRpcs, isTestnet, "mainnet", now), ct);
+                    new NetworkAddedEvent(chainId, clNetwork.Name, filteredRpcs, isTestnet, networkType, now), ct);
                 added++;
             }
-            else if (!filteredRpcs.SequenceEqual(existing.RpcUrls))
+            else if (!filteredRpcs.SequenceEqual(existing.RpcUrls) ||
+                     existing.IsTestnet != isTestnet ||
+                     existing.NetworkType != networkType)
             {
-                var network = existing with { RpcUrls = filteredRpcs, IsTestnet = isTestnet, LastSyncedAt = now };
+                var network = existing with { RpcUrls = filteredRpcs, IsTestnet = isTestnet, NetworkType = networkType, LastSyncedAt = now };
                 await networkRepository.UpsertAsync(network, ct);
-                await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
-                    new NetworkRpcsUpdatedEvent(chainId, filteredRpcs, now), ct);
+                if (!filteredRpcs.SequenceEqual(existing.RpcUrls))
+                    await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
+                        new NetworkRpcsUpdatedEvent(chainId, filteredRpcs, now), ct);
                 updated++;
             }
             else
             {
-                await networkRepository.UpsertAsync(existing with { LastSyncedAt = now, IsTestnet = isTestnet }, ct);
+                await networkRepository.UpsertAsync(existing with { LastSyncedAt = now }, ct);
             }
         }
 

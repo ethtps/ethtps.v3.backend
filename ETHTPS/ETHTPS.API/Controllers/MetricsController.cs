@@ -9,7 +9,8 @@ namespace ETHTPS.API.Controllers;
 [Route("api/v1/metrics")]
 public class MetricsController(
     MetricsQueryService metricsService,
-    MetricsEventConsumer consumer) : ControllerBase
+    MetricsEventConsumer consumer,
+    ConnectionTracker connectionTracker) : ControllerBase
 {
     private static readonly Dictionary<string, TimeSpan> MaxRanges = new()
     {
@@ -48,6 +49,9 @@ public class MetricsController(
         var result = await metricsService.GetHistoryAsync(chainId, from, to, resolution, ct);
         return Ok(result);
     }
+
+    [HttpGet("viewers")]
+    public IActionResult GetViewers() => Ok(new { count = connectionTracker.Count });
 
     [HttpGet("global/live")]
     public IActionResult GetGlobalLive(

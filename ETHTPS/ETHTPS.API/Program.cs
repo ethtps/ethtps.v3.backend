@@ -31,6 +31,7 @@ builder.Services
     .AddSingleton<NetworkReadRepository>()
     .AddSingleton<MetricsQueryService>()
     .AddSingleton<NetworkQueryService>()
+    .AddSingleton<ConnectionTracker>()
     .AddSingleton<MetricsEventConsumer>()
     .AddHostedService(sp => sp.GetRequiredService<MetricsEventConsumer>())
     .AddSignalR()

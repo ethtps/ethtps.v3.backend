@@ -21,6 +21,35 @@ public class ChainCrawler(
     IOptions<BackfillOptions> options,
     ILogger<ChainCrawler> logger)
 {
+    private async Task<long> EstimateStartBlockAsync(string rpc, long headBlock, CancellationToken ct)
+    {
+        var opts = options.Value;
+        var headResult = await rpcClient.GetBlockByNumberAsync(rpc, headBlock, network.ChainId, ct);
+        if (headResult is null) return headBlock;
+
+        var sampleBlock = Math.Max(0, headBlock - 100);
+        var sampleResult = sampleBlock < headBlock
+            ? await rpcClient.GetBlockByNumberAsync(rpc, sampleBlock, network.ChainId, ct)
+            : null;
+
+        double avgBlockTimeSec;
+        if (sampleResult is null || sampleBlock == headBlock)
+        {
+            avgBlockTimeSec = 12; // fallback: assume ~12s blocks
+        }
+        else
+        {
+            var elapsed = (headResult.Value.Block.Timestamp - sampleResult.Value.Block.Timestamp).TotalSeconds;
+            avgBlockTimeSec = elapsed > 0 ? elapsed / (headBlock - sampleBlock) : 12;
+        }
+
+        var blocksToGoBack = (long)(opts.LookbackHours * 3600.0 / avgBlockTimeSec);
+        var startBlock = Math.Max(0, headBlock - blocksToGoBack);
+        logger.LogInformation("Chain {ChainId}: lookback={LookbackHours}h avgBlockTime={AvgSec:F1}s starting at block {Start}",
+            network.ChainId, opts.LookbackHours, avgBlockTimeSec, startBlock);
+        return startBlock;
+    }
+
     public async Task RunAsync(CancellationToken ct)
     {
         var opts = options.Value;
@@ -43,7 +72,9 @@ public class ChainCrawler(
         var targetBlock = headBlock.Value;
         await progressRepo.MarkRunningAsync(chainId, targetBlock, ct);
 
-        var currentBlock = initialProgress.LastBlockNumber < 0 ? 0L : initialProgress.LastBlockNumber + 1;
+        var currentBlock = initialProgress.LastBlockNumber < 0
+            ? await EstimateStartBlockAsync(rpc, targetBlock, ct)
+            : initialProgress.LastBlockNumber + 1;
         var startBlock = currentBlock;
         var completedBlocks = 0L;
         DateTimeOffset? inMemoryAnchorTimestamp = null;

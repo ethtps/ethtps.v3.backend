@@ -1,9 +1,22 @@
+using ETHTPS.API.Services;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ETHTPS.API.Hubs;
 
-public class MetricsHub : Hub
+public class MetricsHub(ConnectionTracker tracker) : Hub
 {
+    public override Task OnConnectedAsync()
+    {
+        tracker.OnConnected();
+        return base.OnConnectedAsync();
+    }
+
+    public override Task OnDisconnectedAsync(Exception? exception)
+    {
+        tracker.OnDisconnected();
+        return base.OnDisconnectedAsync(exception);
+    }
+
     public async Task Subscribe(int[] chainIds)
     {
         foreach (var id in chainIds)
