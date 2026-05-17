@@ -1,6 +1,6 @@
 [
   {
-    "networkName": "Ethereum Mainnet",
-    "rpcUrls": []
+    "networkName": "Nova Network",
+    "rpcUrls": [ "https://rpc.novanetwork.io:9070", "https://dev.rpc.novanetwork.io", "https://connect.novanetwork.io", "https://0x57.redjackstudio.com" ]
   }
 ]

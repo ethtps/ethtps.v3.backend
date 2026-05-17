@@ -10,7 +10,8 @@
       "Bash(git -C \"D:/repos/ethtps.v3.backend\" add ETHTPS/)",
       "Bash(git -C \"D:/repos/ethtps.v3.backend\" status --short)",
       "Bash(git -C \"D:/repos/ethtps.v3.backend\" add .claude/)",
-      "Bash(git -C D:/repos/ethtps.v3.backend commit -m ' *)"
+      "Bash(git -C D:/repos/ethtps.v3.backend commit -m ' *)",
+      "Bash(Remove-Item \"ETHTPS.ChainRegistry/Clients/DefiLlamaClient.cs\",\"ETHTPS.ChainRegistry/Clients/DefiLlamaChain.cs\")"
     ]
   }
 }
