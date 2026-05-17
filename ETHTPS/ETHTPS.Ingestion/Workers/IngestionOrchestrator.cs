@@ -3,6 +3,7 @@ using ETHTPS.Ingestion.Models;
 using ETHTPS.Ingestion.Options;
 using ETHTPS.Ingestion.Publishers;
 using ETHTPS.Ingestion.Rpc;
+using ETHTPS.Ingestion.RpcOverrides;
 using ETHTPS.Ingestion.Watchers;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ public class IngestionOrchestrator(
     RpcHealthTracker healthTracker,
     RpcSelector rpcSelector,
     IBlockPublisher publisher,
+    RpcOverridesLoader rpcOverridesLoader,
     IOptions<IngestionOptions> options,
     ILogger<IngestionOrchestrator> logger,
     ILoggerFactory loggerFactory) : BackgroundService
@@ -27,7 +29,8 @@ public class IngestionOrchestrator(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _hostToken = stoppingToken;
-        var networks = await LoadNetworksFromDbAsync(stoppingToken);
+        var rpcOverrides = rpcOverridesLoader.Load();
+        var networks = await LoadNetworksFromDbAsync(stoppingToken, rpcOverrides);
         logger.LogInformation("Loaded {Count} networks from DB — starting watchers", networks.Count);
         foreach (var network in networks)
             StartWatcher(network);
@@ -87,7 +90,8 @@ public class IngestionOrchestrator(
     private bool InShard(int chainId) =>
         chainId >= options.Value.ShardChainIdMin && chainId <= options.Value.ShardChainIdMax;
 
-    private async Task<IReadOnlyList<Network>> LoadNetworksFromDbAsync(CancellationToken ct)
+    private async Task<IReadOnlyList<Network>> LoadNetworksFromDbAsync(
+        CancellationToken ct, IReadOnlyDictionary<string, string[]>? rpcOverrides = null)
     {
         var opts = options.Value;
         await using var conn = await dataSource.OpenConnectionAsync(ct);
@@ -103,11 +107,21 @@ public class IngestionOrchestrator(
         var networks = new List<Network>();
         while (await reader.ReadAsync(ct))
         {
+            var name = reader.GetString(1);
+            var rpcUrls = reader.GetFieldValue<string[]>(2);
+
+            if (rpcOverrides is not null &&
+                rpcOverrides.TryGetValue(name.ToLowerInvariant(), out var extra))
+            {
+                rpcUrls = [..rpcUrls, ..extra.Except(rpcUrls)];
+                logger.LogInformation("Applied {Count} RPC override(s) to {Name}", extra.Length, name);
+            }
+
             networks.Add(new Network
             {
                 ChainId = reader.GetInt32(0),
-                Name = reader.GetString(1),
-                RpcUrls = reader.GetFieldValue<string[]>(2)
+                Name = name,
+                RpcUrls = rpcUrls
             });
         }
         return networks;

@@ -2,6 +2,7 @@ using Npgsql;
 using ETHTPS.Ingestion.Options;
 using ETHTPS.Ingestion.Publishers;
 using ETHTPS.Ingestion.Rpc;
+using ETHTPS.Ingestion.RpcOverrides;
 using ETHTPS.Ingestion.Workers;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -14,6 +15,7 @@ builder.Services
     .AddSingleton<RpcHealthTracker>()
     .AddSingleton<RpcSelector>()
     .AddSingleton<IBlockPublisher, KafkaBlockPublisher>()
+    .AddSingleton<RpcOverridesLoader>()
     .AddSingleton<IngestionOrchestrator>()
     .AddHostedService(sp => sp.GetRequiredService<IngestionOrchestrator>())
     .AddHostedService<NetworkEventConsumer>();

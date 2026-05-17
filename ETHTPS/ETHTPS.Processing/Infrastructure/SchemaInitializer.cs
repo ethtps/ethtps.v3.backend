@@ -47,6 +47,11 @@ public class SchemaInitializer(NpgsqlDataSource dataSource, ILogger<SchemaInitia
             );
             """, ct);
 
+        if (await TryCreateContinuousAggregateAsync(conn, "metrics_1s", "1 second", ct))
+        {
+            await TryAddAggregatePolicy(conn, "metrics_1s", "10 minutes", "1 second", "5 seconds", ct);
+            await TryAddRetentionPolicyAsync(conn, "metrics_1s", "5 minutes", ct);
+        }
         if (await TryCreateContinuousAggregateAsync(conn, "metrics_1m", "1 minute", ct))
             await TryAddAggregatePolicy(conn, "metrics_1m", "30 minutes", "1 minute", "1 minute", ct);
         if (await TryCreateContinuousAggregateAsync(conn, "metrics_5m", "5 minutes", ct))
@@ -144,6 +149,24 @@ public class SchemaInitializer(NpgsqlDataSource dataSource, ILogger<SchemaInitia
         {
             logger.LogWarning(ex, "Continuous aggregate {ViewName} creation skipped (TimescaleDB required)", viewName);
             return false;
+        }
+    }
+
+    private async Task TryAddRetentionPolicyAsync(NpgsqlConnection conn, string viewName, string retention, CancellationToken ct)
+    {
+        try
+        {
+            await using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT add_retention_policy('{viewName}',
+                    INTERVAL '{retention}',
+                    if_not_exists => TRUE);
+                """;
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Retention policy for {ViewName} skipped", viewName);
         }
     }
 

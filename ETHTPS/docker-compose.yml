@@ -68,7 +68,7 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_HOURS: 1
       KAFKA_LOG_SEGMENT_BYTES: 1073741824
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     volumes:
@@ -96,16 +96,16 @@ services:
       bash -c "
         /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic network-events     --partitions 8  --replication-factor 1
-          --config retention.ms=604800000 &&
+          --config retention.ms=86400000 &&
         /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic raw-blocks         --partitions 16 --replication-factor 1
-          --config retention.ms=86400000 &&
+          --config retention.ms=3600000 &&
         /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic raw-transactions   --partitions 16 --replication-factor 1
-          --config retention.ms=86400000 &&
+          --config retention.ms=3600000 &&
         /opt/kafka/bin/kafka-topics.sh --create --if-not-exists --bootstrap-server kafka:9092
           --topic aggregated-metrics --partitions 8  --replication-factor 1
-          --config retention.ms=604800000 &&
+          --config retention.ms=3600000 &&
         echo 'All Kafka topics ready.'
       "
 

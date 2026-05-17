@@ -14,6 +14,7 @@ public class MetricsController(
 {
     private static readonly Dictionary<string, TimeSpan> MaxRanges = new()
     {
+        ["1s"] = TimeSpan.FromMinutes(5),
         ["1m"] = TimeSpan.FromHours(24),
         ["5m"] = TimeSpan.FromDays(7),
         ["1h"] = TimeSpan.FromDays(90),
