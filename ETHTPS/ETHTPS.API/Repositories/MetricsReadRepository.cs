@@ -34,20 +34,64 @@ public class MetricsReadRepository(NpgsqlDataSource dataSource)
     public async Task<IReadOnlyList<HistoricalBucket>> GetHistoryAsync(
         int chainId, DateTimeOffset from, DateTimeOffset to, string resolution, CancellationToken ct)
     {
-        if (!ViewMap.TryGetValue(resolution, out var viewName))
+        if (!ViewMap.TryGetValue(resolution, out _))
             throw new ArgumentException($"Unknown resolution: {resolution}", nameof(resolution));
 
         await using var conn = await dataSource.OpenConnectionAsync(ct);
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"""
-            SELECT bucket, chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
-            FROM {viewName}
-            WHERE chain_id = $1 AND bucket >= $2 AND bucket <= $3
-            ORDER BY bucket ASC
-            """;
+        var flooredFrom = FloorToBucket(from, resolution);
+        var flooredTo = FloorToBucket(to, resolution);
+
+        if (resolution == "1s")
+        {
+            cmd.CommandText = """
+                WITH series AS (
+                    SELECT generate_series($2::timestamptz, $3::timestamptz, INTERVAL '1 second') AS bucket
+                ),
+                data AS (
+                    SELECT bucket, avg_tps, max_tps, avg_gps, max_gps, block_count
+                    FROM metrics_1s
+                    WHERE chain_id = $1 AND bucket >= $2 AND bucket <= $3
+                ),
+                joined AS (
+                    SELECT s.bucket, d.avg_tps, d.max_tps, d.avg_gps, d.max_gps,
+                           COALESCE(d.block_count, 0) AS block_count
+                    FROM series s
+                    LEFT JOIN data d ON d.bucket = s.bucket
+                ),
+                grps AS (
+                    SELECT *,
+                        count(avg_tps) OVER (ORDER BY bucket ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS grp
+                    FROM joined
+                ),
+                filled AS (
+                    SELECT bucket,
+                        first_value(avg_tps) OVER (PARTITION BY grp ORDER BY bucket) AS avg_tps,
+                        first_value(max_tps) OVER (PARTITION BY grp ORDER BY bucket) AS max_tps,
+                        first_value(avg_gps) OVER (PARTITION BY grp ORDER BY bucket) AS avg_gps,
+                        first_value(max_gps) OVER (PARTITION BY grp ORDER BY bucket) AS max_gps,
+                        block_count
+                    FROM grps
+                )
+                SELECT bucket, $1 AS chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
+                FROM filled
+                ORDER BY bucket ASC
+                """;
+        }
+        else
+        {
+            var viewName = ViewMap[resolution];
+            cmd.CommandText = $"""
+                SELECT bucket, chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
+                FROM {viewName}
+                WHERE chain_id = $1 AND bucket >= $2 AND bucket <= $3
+                ORDER BY bucket ASC
+                """;
+        }
+
         cmd.Parameters.Add(new NpgsqlParameter<int> { Value = chainId });
-        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = FloorToBucket(from, resolution), NpgsqlDbType = NpgsqlDbType.TimestampTz });
-        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = FloorToBucket(to, resolution), NpgsqlDbType = NpgsqlDbType.TimestampTz });
+        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = flooredFrom, NpgsqlDbType = NpgsqlDbType.TimestampTz });
+        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = flooredTo, NpgsqlDbType = NpgsqlDbType.TimestampTz });
 
         return await ReadBucketsAsync(cmd, ct);
     }
@@ -55,19 +99,68 @@ public class MetricsReadRepository(NpgsqlDataSource dataSource)
     public async Task<IReadOnlyList<HistoricalBucket>> GetGlobalHistoryAsync(
         DateTimeOffset from, DateTimeOffset to, string resolution, CancellationToken ct)
     {
-        if (!ViewMap.TryGetValue(resolution, out var viewName))
+        if (!ViewMap.TryGetValue(resolution, out _))
             throw new ArgumentException($"Unknown resolution: {resolution}", nameof(resolution));
 
         await using var conn = await dataSource.OpenConnectionAsync(ct);
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = $"""
-            SELECT bucket, chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
-            FROM {viewName}
-            WHERE bucket >= $1 AND bucket <= $2
-            ORDER BY bucket ASC, chain_id ASC
-            """;
-        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = FloorToBucket(from, resolution), NpgsqlDbType = NpgsqlDbType.TimestampTz });
-        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = FloorToBucket(to, resolution), NpgsqlDbType = NpgsqlDbType.TimestampTz });
+        var flooredFrom = FloorToBucket(from, resolution);
+        var flooredTo = FloorToBucket(to, resolution);
+
+        if (resolution == "1s")
+        {
+            cmd.CommandText = """
+                WITH chains AS (
+                    SELECT DISTINCT chain_id FROM metrics_1s
+                    WHERE bucket >= $1 AND bucket <= $2
+                ),
+                series AS (
+                    SELECT c.chain_id, generate_series($1::timestamptz, $2::timestamptz, INTERVAL '1 second') AS bucket
+                    FROM chains c
+                ),
+                data AS (
+                    SELECT bucket, chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
+                    FROM metrics_1s
+                    WHERE bucket >= $1 AND bucket <= $2
+                ),
+                joined AS (
+                    SELECT s.bucket, s.chain_id, d.avg_tps, d.max_tps, d.avg_gps, d.max_gps,
+                           COALESCE(d.block_count, 0) AS block_count
+                    FROM series s
+                    LEFT JOIN data d ON d.bucket = s.bucket AND d.chain_id = s.chain_id
+                ),
+                grps AS (
+                    SELECT *,
+                        count(avg_tps) OVER (PARTITION BY chain_id ORDER BY bucket ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS grp
+                    FROM joined
+                ),
+                filled AS (
+                    SELECT bucket, chain_id,
+                        first_value(avg_tps) OVER (PARTITION BY chain_id, grp ORDER BY bucket) AS avg_tps,
+                        first_value(max_tps) OVER (PARTITION BY chain_id, grp ORDER BY bucket) AS max_tps,
+                        first_value(avg_gps) OVER (PARTITION BY chain_id, grp ORDER BY bucket) AS avg_gps,
+                        first_value(max_gps) OVER (PARTITION BY chain_id, grp ORDER BY bucket) AS max_gps,
+                        block_count
+                    FROM grps
+                )
+                SELECT bucket, chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
+                FROM filled
+                ORDER BY bucket ASC, chain_id ASC
+                """;
+        }
+        else
+        {
+            var viewName = ViewMap[resolution];
+            cmd.CommandText = $"""
+                SELECT bucket, chain_id, avg_tps, max_tps, avg_gps, max_gps, block_count
+                FROM {viewName}
+                WHERE bucket >= $1 AND bucket <= $2
+                ORDER BY bucket ASC, chain_id ASC
+                """;
+        }
+
+        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = flooredFrom, NpgsqlDbType = NpgsqlDbType.TimestampTz });
+        cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = flooredTo, NpgsqlDbType = NpgsqlDbType.TimestampTz });
 
         return await ReadBucketsAsync(cmd, ct);
     }
