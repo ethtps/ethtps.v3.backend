@@ -14,6 +14,7 @@ public class NetworkWatcher(
     RpcSelector rpcSelector,
     IBlockPublisher publisher,
     IOptions<IngestionOptions> options,
+    StatusTracker statusTracker,
     ILogger<NetworkWatcher> logger)
 {
     private DateTimeOffset? _previousBlockTimestamp;
@@ -27,6 +28,7 @@ public class NetworkWatcher(
             if (rpc is null)
             {
                 logger.LogWarning("No RPCs configured for chain {ChainId}", network.ChainId);
+                SetState("no-rpc");
                 await Task.Delay(5000, ct);
                 continue;
             }
@@ -55,13 +57,22 @@ public class NetworkWatcher(
             {
                 logger.LogWarning(ex, "Watcher error on chain {ChainId} rpc {Rpc}", network.ChainId, rpc);
                 healthTracker.RecordFailure(rpc, options.Value.MaxRpcBackoffSeconds);
+                SetState("error");
             }
         }
     }
 
+    private void SetState(string state)
+    {
+        var current = statusTracker.GetAll().FirstOrDefault(s => s.ChainId == network.ChainId);
+        statusTracker.Update(current is null
+            ? new ChainStatus(network.ChainId, network.Name, 0, 0, 0, DateTimeOffset.MinValue, state)
+            : current with { State = state });
+    }
+
     private async Task RunWebSocketAsync(string wssUrl, CancellationToken ct)
     {
-        logger.LogInformation("Chain {ChainId}: subscribing via WebSocket {Url}", network.ChainId, wssUrl);
+        logger.LogDebug("Chain {ChainId}: subscribing via WebSocket {Url}", network.ChainId, wssUrl);
         await foreach (var blockNumber in rpcClient.SubscribeNewHeadsAsync(wssUrl, ct))
         {
             var tag = "0x" + blockNumber.ToString("x");
@@ -72,6 +83,7 @@ public class NetworkWatcher(
             if (result is null)
             {
                 healthTracker.RecordFailure(wssUrl, options.Value.MaxRpcBackoffSeconds);
+                SetState("error");
                 return;
             }
 
@@ -81,13 +93,14 @@ public class NetworkWatcher(
 
     private async Task RunHttpPollAsync(string rpcUrl, CancellationToken ct)
     {
-        logger.LogInformation("Chain {ChainId}: polling via HTTP {Url}", network.ChainId, rpcUrl);
+        logger.LogDebug("Chain {ChainId}: polling via HTTP {Url}", network.ChainId, rpcUrl);
         while (!ct.IsCancellationRequested && healthTracker.IsAvailable(rpcUrl))
         {
             var result = await rpcClient.GetBlockByNumberAsync(rpcUrl, "latest", network.ChainId, ct);
             if (result is null)
             {
                 healthTracker.RecordFailure(rpcUrl, options.Value.MaxRpcBackoffSeconds);
+                SetState("error");
                 return;
             }
 
@@ -115,7 +128,12 @@ public class NetworkWatcher(
         await publisher.PublishBlockAsync(finalBlock, transactions, ct);
         healthTracker.RecordSuccess(rpc);
 
-        logger.LogInformation("Chain {ChainId} ({Name}): block {BlockNumber} txs={TxCount} blockTime={BlockTimeMs}ms",
+        statusTracker.Update(new ChainStatus(
+            network.ChainId, network.Name,
+            block.BlockNumber, transactions.Count, blockTimeMs,
+            DateTimeOffset.UtcNow, "ok"));
+
+        logger.LogDebug("Chain {ChainId} ({Name}): block {BlockNumber} txs={TxCount} blockTime={BlockTimeMs}ms",
             network.ChainId, network.Name, block.BlockNumber, transactions.Count, blockTimeMs);
     }
 }
