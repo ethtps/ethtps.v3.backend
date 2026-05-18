@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using ETHTPS.Ingestion.Models;
 using ETHTPS.Ingestion.Options;
 using ETHTPS.Ingestion.Publishers;
@@ -9,6 +10,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using StackExchange.Redis;
 
 namespace ETHTPS.Ingestion.Workers;
 
@@ -19,6 +21,8 @@ public class IngestionOrchestrator(
     RpcSelector rpcSelector,
     IBlockPublisher publisher,
     RpcOverridesLoader rpcOverridesLoader,
+    StatusTracker statusTracker,
+    IConnectionMultiplexer redis,
     IOptions<IngestionOptions> options,
     ILogger<IngestionOrchestrator> logger,
     ILoggerFactory loggerFactory) : BackgroundService
@@ -32,11 +36,75 @@ public class IngestionOrchestrator(
         var rpcOverrides = rpcOverridesLoader.Load();
         var networks = await LoadNetworksFromDbAsync(stoppingToken, rpcOverrides);
         logger.LogInformation("Loaded {Count} networks from DB — starting watchers", networks.Count);
+
         foreach (var network in networks)
+        {
+            statusTracker.Update(new ChainStatus(network.ChainId, network.Name, 0, 0, 0, DateTimeOffset.MinValue, "pending"));
             StartWatcher(network);
+        }
+
         logger.LogInformation("All watchers started ({Count} active)", _watchers.Count);
 
-        await Task.Delay(Timeout.Infinite, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var chains = statusTracker.GetAll();
+            PrintStatus(chains);
+            _ = PublishStatusAsync(chains);
+            await Task.Delay(TimeSpan.FromSeconds(10), stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        }
+    }
+
+    private async Task PublishStatusAsync(IReadOnlyList<ChainStatus> chains)
+    {
+        try
+        {
+            var db = redis.GetDatabase();
+            var json = JsonSerializer.Serialize(chains);
+            await db.StringSetAsync("ethtps:ingestion:status", json, TimeSpan.FromSeconds(30));
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to publish ingestion status to Redis");
+        }
+    }
+
+    private void PrintStatus(IReadOnlyList<ChainStatus> chains)
+    {
+        var now = DateTimeOffset.UtcNow;
+        const int sep = 90;
+        var line = new string('─', sep);
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(line);
+        sb.AppendLine($" Ingestion  {now:HH:mm:ss} UTC  ·  {chains.Count} chains monitored");
+        sb.AppendLine(line);
+        sb.AppendLine($" {"#",-9} {"Name",-30} {"Block",12}  {"Txs",6}  {"BlkTime",8}  {"Last seen",10}  State");
+        sb.AppendLine(line);
+
+        foreach (var c in chains)
+        {
+            var blockNum = c.LastBlockNumber > 0 ? c.LastBlockNumber.ToString("N0") : "—";
+            var txs      = c.LastBlockNumber > 0 ? c.LastTxCount.ToString() : "—";
+            var blkTime  = c.LastBlockTimeMs > 0 ? $"{c.LastBlockTimeMs / 1000.0:F1}s" : "—";
+            var age      = c.LastBlockAt == DateTimeOffset.MinValue
+                ? "pending"
+                : FormatAge(now - c.LastBlockAt);
+            var stale    = c.State == "ok" && now - c.LastBlockAt > TimeSpan.FromSeconds(120);
+            var state    = stale ? "stale" : c.State;
+
+            var name = c.Name.Length > 29 ? c.Name[..29] + "…" : c.Name;
+            sb.AppendLine($" #{c.ChainId,-8} {name,-30} {blockNum,12}  {txs,6}  {blkTime,8}  {age,10}  {state}");
+        }
+
+        sb.AppendLine(line);
+        Console.Write(sb.ToString());
+    }
+
+    private static string FormatAge(TimeSpan age)
+    {
+        if (age.TotalSeconds < 60)  return $"{(int)age.TotalSeconds}s ago";
+        if (age.TotalMinutes < 60)  return $"{(int)age.TotalMinutes}m ago";
+        return $"{(int)age.TotalHours}h ago";
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)
@@ -57,7 +125,7 @@ public class IngestionOrchestrator(
 
         var cts = CancellationTokenSource.CreateLinkedTokenSource(_hostToken);
         var watcher = new NetworkWatcher(network, rpcClient, healthTracker, rpcSelector, publisher,
-            options, loggerFactory.CreateLogger<NetworkWatcher>());
+            options, statusTracker, loggerFactory.CreateLogger<NetworkWatcher>());
         var task = Task.Run(() => watcher.RunAsync(cts.Token), cts.Token);
         var handle = new WatcherHandle(task, cts);
 
