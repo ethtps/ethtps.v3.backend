@@ -20,6 +20,9 @@ builder.Services
     .AddHttpClient<L2BeatClient>()
         .AddStandardResilienceHandler()
         .Services
+    .AddHttpClient<LogoFetcher>()
+        .AddStandardResilienceHandler()
+        .Services
     .AddSingleton<INetworkRepository, NetworkRepository>()
     .AddSingleton<IKafkaProducer, KafkaProducer>()
     .AddHostedService<ChainRegistryWorker>();

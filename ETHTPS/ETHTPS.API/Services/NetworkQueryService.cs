@@ -10,4 +10,7 @@ public class NetworkQueryService(NetworkReadRepository repository)
 
     public Task<NetworkResponse?> GetByChainIdAsync(int chainId, CancellationToken ct) =>
         repository.GetByChainIdAsync(chainId, ct);
+
+    public Task<(byte[] Bytes, string ContentType)?> GetLogoAsync(int chainId, CancellationToken ct) =>
+        repository.GetLogoAsync(chainId, ct);
 }

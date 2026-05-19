@@ -8,6 +8,7 @@ public record Network
     public bool Enabled { get; init; } = true;
     public bool IsTestnet { get; init; } = false;
     public string NetworkType { get; init; } = "mainnet";
+    public bool HasLogo { get; init; } = false;
     public DateTimeOffset? RemovedAt { get; init; }
     public DateTimeOffset LastSyncedAt { get; init; }
 }

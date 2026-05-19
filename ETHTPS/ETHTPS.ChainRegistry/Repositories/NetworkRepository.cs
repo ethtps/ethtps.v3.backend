@@ -12,17 +12,21 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
         await using var cmd = conn.CreateCommand();
         cmd.CommandText = """
             CREATE TABLE IF NOT EXISTS networks (
-                chain_id       INTEGER PRIMARY KEY,
-                name           TEXT        NOT NULL,
-                rpc_urls       TEXT[]      NOT NULL,
-                enabled        BOOLEAN     NOT NULL DEFAULT TRUE,
-                is_testnet     BOOLEAN     NOT NULL DEFAULT FALSE,
-                network_type   TEXT        NOT NULL DEFAULT 'mainnet',
-                removed_at     TIMESTAMPTZ,
-                last_synced_at TIMESTAMPTZ NOT NULL
+                chain_id          INTEGER PRIMARY KEY,
+                name              TEXT        NOT NULL,
+                rpc_urls          TEXT[]      NOT NULL,
+                enabled           BOOLEAN     NOT NULL DEFAULT TRUE,
+                is_testnet        BOOLEAN     NOT NULL DEFAULT FALSE,
+                network_type      TEXT        NOT NULL DEFAULT 'mainnet',
+                logo              BYTEA,
+                logo_content_type TEXT,
+                removed_at        TIMESTAMPTZ,
+                last_synced_at    TIMESTAMPTZ NOT NULL
             );
-            ALTER TABLE networks ADD COLUMN IF NOT EXISTS is_testnet   BOOLEAN NOT NULL DEFAULT FALSE;
-            ALTER TABLE networks ADD COLUMN IF NOT EXISTS network_type TEXT    NOT NULL DEFAULT 'mainnet';
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS is_testnet        BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS network_type      TEXT    NOT NULL DEFAULT 'mainnet';
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo              BYTEA;
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo_content_type TEXT;
             """;
         await cmd.ExecuteNonQueryAsync(ct);
     }
@@ -31,7 +35,7 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
     {
         await using var conn = await dataSource.OpenConnectionAsync(ct);
         await using var cmd = conn.CreateCommand();
-        cmd.CommandText = "SELECT chain_id, name, rpc_urls, enabled, is_testnet, network_type, removed_at, last_synced_at FROM networks";
+        cmd.CommandText = "SELECT chain_id, name, rpc_urls, enabled, is_testnet, network_type, logo IS NOT NULL, removed_at, last_synced_at FROM networks";
         await using var reader = await cmd.ExecuteReaderAsync(ct);
         var networks = new List<Network>();
         while (await reader.ReadAsync(ct))
@@ -44,8 +48,9 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
                 Enabled = reader.GetBoolean(3),
                 IsTestnet = reader.GetBoolean(4),
                 NetworkType = reader.GetString(5),
-                RemovedAt = reader.IsDBNull(6) ? null : reader.GetFieldValue<DateTimeOffset>(6),
-                LastSyncedAt = reader.GetFieldValue<DateTimeOffset>(7)
+                HasLogo = reader.GetBoolean(6),
+                RemovedAt = reader.IsDBNull(7) ? null : reader.GetFieldValue<DateTimeOffset>(7),
+                LastSyncedAt = reader.GetFieldValue<DateTimeOffset>(8)
             });
         }
         return networks;
@@ -78,6 +83,17 @@ public class NetworkRepository(NpgsqlDataSource dataSource) : INetworkRepository
         else
             cmd.Parameters.Add(new NpgsqlParameter { Value = DBNull.Value, NpgsqlDbType = NpgsqlDbType.TimestampTz });
         cmd.Parameters.Add(new NpgsqlParameter<DateTimeOffset> { Value = network.LastSyncedAt, NpgsqlDbType = NpgsqlDbType.TimestampTz });
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    public async Task UpdateLogoAsync(int chainId, byte[] logo, string contentType, CancellationToken ct)
+    {
+        await using var conn = await dataSource.OpenConnectionAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE networks SET logo = $1, logo_content_type = $2 WHERE chain_id = $3 AND logo IS NULL";
+        cmd.Parameters.Add(new NpgsqlParameter { Value = logo, NpgsqlDbType = NpgsqlDbType.Bytea });
+        cmd.Parameters.Add(new NpgsqlParameter<string> { Value = contentType });
+        cmd.Parameters.Add(new NpgsqlParameter<int> { Value = chainId });
         await cmd.ExecuteNonQueryAsync(ct);
     }
 

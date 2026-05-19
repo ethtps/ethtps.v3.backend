@@ -13,6 +13,7 @@ namespace ETHTPS.ChainRegistry.Workers;
 public class ChainRegistryWorker(
     ChainlistClient chainlistClient,
     L2BeatClient l2BeatClient,
+    LogoFetcher logoFetcher,
     INetworkRepository networkRepository,
     IKafkaProducer kafkaProducer,
     IOptions<ChainRegistryOptions> options,
@@ -75,6 +76,7 @@ public class ChainRegistryWorker(
         var removed = 0;
         var updated = 0;
         var now = DateTimeOffset.UtcNow;
+        var logoQueue = new List<(int ChainId, string? Icon)>();
 
         foreach (var (chainId, clNetwork) in chainlistMap)
         {
@@ -97,6 +99,7 @@ public class ChainRegistryWorker(
                 await networkRepository.UpsertAsync(network, ct);
                 await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
                     new NetworkAddedEvent(chainId, clNetwork.Name, filteredRpcs, isTestnet, networkType, now), ct);
+                logoQueue.Add((chainId, clNetwork.Icon));
                 added++;
             }
             else if (!filteredRpcs.SequenceEqual(existing.RpcUrls) ||
@@ -108,11 +111,13 @@ public class ChainRegistryWorker(
                 if (!filteredRpcs.SequenceEqual(existing.RpcUrls))
                     await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
                         new NetworkRpcsUpdatedEvent(chainId, filteredRpcs, now), ct);
+                if (!existing.HasLogo) logoQueue.Add((chainId, clNetwork.Icon));
                 updated++;
             }
             else
             {
                 await networkRepository.UpsertAsync(existing with { LastSyncedAt = now }, ct);
+                if (!existing.HasLogo) logoQueue.Add((chainId, clNetwork.Icon));
             }
         }
 
@@ -127,6 +132,20 @@ public class ChainRegistryWorker(
             }
         }
 
-        logger.LogInformation("Sync complete — added={Added} removed={Removed} updated={Updated}", added, removed, updated);
+        logger.LogInformation("Sync complete — added={Added} removed={Removed} updated={Updated} logoQueue={LogoQueue}",
+            added, removed, updated, logoQueue.Count);
+
+        var logosFetched = 0;
+        foreach (var (chainId, icon) in logoQueue)
+        {
+            var logo = await logoFetcher.FetchAsync(icon, chainId, ct);
+            if (logo.HasValue)
+            {
+                await networkRepository.UpdateLogoAsync(chainId, logo.Value.Bytes, logo.Value.ContentType, ct);
+                logosFetched++;
+            }
+        }
+        if (logoQueue.Count > 0)
+            logger.LogInformation("Logo fetch complete — fetched={Fetched}/{Total}", logosFetched, logoQueue.Count);
     }
 }

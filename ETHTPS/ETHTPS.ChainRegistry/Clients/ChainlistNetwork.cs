@@ -18,4 +18,7 @@ public class ChainlistNetwork
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = "";
+
+    [JsonPropertyName("icon")]
+    public string? Icon { get; set; }
 }
