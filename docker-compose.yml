@@ -124,12 +124,12 @@ services:
       - ethtps-net
 
   # ── Application services ──────────────────────────────────────────────────────
-  # Each service is built from the solution root (context: .) using its own
+  # Each service is built from the ETHTPS/ subdirectory (context: ./ETHTPS) using its own
   # Dockerfile. Adjust ShardChainIdMin/Max env vars to split load across replicas.
 
   chain-registry:
     build:
-      context: .
+      context: ./ETHTPS
       dockerfile: ETHTPS.ChainRegistry/Dockerfile
     restart: on-failure
     environment:
@@ -147,7 +147,7 @@ services:
 
   ingestion:
     build:
-      context: .
+      context: ./ETHTPS
       dockerfile: ETHTPS.Ingestion/Dockerfile
     restart: on-failure
     environment:
@@ -171,7 +171,7 @@ services:
 
   processing:
     build:
-      context: .
+      context: ./ETHTPS
       dockerfile: ETHTPS.Processing/Dockerfile
     restart: on-failure
     environment:
@@ -199,7 +199,7 @@ services:
   # SchemaInitializer first — creating the hypertables backfill writes into.
   backfill:
     build:
-      context: .
+      context: ./ETHTPS
       dockerfile: ETHTPS.Backfill/Dockerfile
     restart: on-failure
     environment:
@@ -226,7 +226,7 @@ services:
 
   api:
     build:
-      context: .
+      context: ./ETHTPS
       dockerfile: ETHTPS.API/Dockerfile
     restart: on-failure
     ports:
