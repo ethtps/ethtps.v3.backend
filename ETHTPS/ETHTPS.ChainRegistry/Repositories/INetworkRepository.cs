@@ -9,4 +9,5 @@ public interface INetworkRepository
     Task UpsertAsync(Network network, CancellationToken ct);
     Task MarkRemovedAsync(int chainId, CancellationToken ct);
     Task UpdateLogoAsync(int chainId, byte[] logo, string contentType, CancellationToken ct);
+    Task IncrementLogoFetchAttemptsAsync(int chainId, CancellationToken ct);
 }

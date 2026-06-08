@@ -17,8 +17,9 @@ public class SchemaInitializer(NpgsqlDataSource dataSource, ILogger<SchemaInitia
                 expires_at  TIMESTAMPTZ,
                 enabled     BOOLEAN     NOT NULL DEFAULT TRUE
             );
-            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo              BYTEA;
-            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo_content_type TEXT;
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo                 BYTEA;
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo_content_type   TEXT;
+            ALTER TABLE networks ADD COLUMN IF NOT EXISTS logo_fetch_attempts SMALLINT NOT NULL DEFAULT 0;
             """;
         await cmd.ExecuteNonQueryAsync(ct);
         logger.LogInformation("API schema initialization complete");

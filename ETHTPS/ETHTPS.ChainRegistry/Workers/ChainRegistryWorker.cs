@@ -111,13 +111,15 @@ public class ChainRegistryWorker(
                 if (!filteredRpcs.SequenceEqual(existing.RpcUrls))
                     await kafkaProducer.PublishAsync(NetworkEventsTopic, chainId.ToString(),
                         new NetworkRpcsUpdatedEvent(chainId, filteredRpcs, now), ct);
-                if (!existing.HasLogo) logoQueue.Add((chainId, clNetwork.Icon));
+                if (!existing.HasLogo && existing.LogoFetchAttempts < options.Value.MaxLogoFetchAttempts)
+                    logoQueue.Add((chainId, clNetwork.Icon));
                 updated++;
             }
             else
             {
                 await networkRepository.UpsertAsync(existing with { LastSyncedAt = now }, ct);
-                if (!existing.HasLogo) logoQueue.Add((chainId, clNetwork.Icon));
+                if (!existing.HasLogo && existing.LogoFetchAttempts < options.Value.MaxLogoFetchAttempts)
+                    logoQueue.Add((chainId, clNetwork.Icon));
             }
         }
 
@@ -143,6 +145,10 @@ public class ChainRegistryWorker(
             {
                 await networkRepository.UpdateLogoAsync(chainId, logo.Value.Bytes, logo.Value.ContentType, ct);
                 logosFetched++;
+            }
+            else
+            {
+                await networkRepository.IncrementLogoFetchAttemptsAsync(chainId, ct);
             }
         }
         if (logoQueue.Count > 0)
