@@ -1,6 +1,0 @@
-@ETHTPS.V3.Backend_HostAddress = http://localhost:5081
-
-GET {{ETHTPS.V3.Backend_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
